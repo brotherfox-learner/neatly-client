@@ -13,8 +13,8 @@ import { Button } from "@/components/ui"
         <header>
           <p class="body-3 text-muted-foreground">Headline Font Test (Noto Serif vs Inter)</p>
         </header>
-        <h1 class="headline-1 font-primary">Headline1 - Noto Serif</h1>
-        <h1 class="headline-1 font-secondary">Headline1 - Inter</h1>
+        <h1 class="headline-1 font-noto-serif">Headline1 - Noto Serif</h1>
+        <h1 class="headline-1 font-inter">Headline1 - Inter</h1>
       </section>
 
       <h2 class="headline-2">Headline2</h2>

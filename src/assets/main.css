@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap");
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 @import "tw-animate-css";
@@ -55,10 +55,11 @@
   --color-input: var(--color-gray-300);
   --color-ring: var(--color-green-500);
 
-  --font-primary: "Noto Serif", Georgia, "Times New Roman", serif;
-  --font-secondary: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-heading: var(--font-primary);
-  --font-body: var(--font-secondary);
+  --font-noto-serif: "Noto Serif", Georgia, "Times New Roman", serif;
+  --font-inter: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-open-sans: "Open Sans", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: var(--font-noto-serif);
+  --font-body: var(--font-inter);
 
   --text-headline-1-size: 7.5rem;
   --text-headline-1-line-height: 1.08;
