@@ -2,7 +2,7 @@
 import { RouterLink, RouterView } from 'vue-router'
 
 import HelloWorld from './components/HelloWorld.vue'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui'
 </script>
 
 <template>

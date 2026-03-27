@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { computed, onMounted, ref, unref } from 'vue'
 import { z } from 'zod'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui'
 import { api } from '@/lib/api'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { userResponseSchema } from '@/schemas/userResponse'
