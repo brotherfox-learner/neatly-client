@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap");
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 @import "tw-animate-css";
@@ -32,7 +32,7 @@
   --color-gray-600: #979db5;
   --color-gray-700: #767e9d;
   --color-gray-800: #505a7d;
-  --color-gray-900: #2e3556;
+  --color-gray-900: #323640;
 
   --color-white: #ffffff;
   --color-black: #000000;
@@ -55,42 +55,58 @@
   --color-input: var(--color-gray-300);
   --color-ring: var(--color-green-500);
 
-  --font-primary: "Noto Serif", Georgia, "Times New Roman", serif;
-  --font-secondary: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-heading: var(--font-primary);
-  --font-body: var(--font-secondary);
+  --font-noto-serif: "Noto Serif", Georgia, "Times New Roman", serif;
+  --font-inter: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-open-sans: "Open Sans", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: var(--font-noto-serif);
+  --font-body: var(--font-inter);
 
-  --text-headline-1-size: 7.5rem;
-  --text-headline-1-line-height: 1.08;
-  --text-headline-1-weight: 400;
+  --text-headline-1-size: 5.5rem;
+  --text-headline-1-line-height: 1.25;
+  --text-headline-1-weight: 500;
 
-  --text-headline-2-size: 6rem;
-  --text-headline-2-line-height: 1.08;
-  --text-headline-2-weight: 400;
+  --text-headline-2-size: 4.25rem;
+  --text-headline-2-line-height: 1.25;
+  --text-headline-2-weight: 500;
 
-  --text-headline-3-size: 4.5rem;
-  --text-headline-3-line-height: 1.12;
-  --text-headline-3-weight: 600;
+  --text-headline-3-size: 2.75rem;
+  --text-headline-3-line-height: 1.25;
+  --text-headline-3-weight: 500;
 
-  --text-headline-4-size: 3rem;
-  --text-headline-4-line-height: 1.15;
-  --text-headline-4-weight: 700;
+  --text-headline-4-size: 1.75rem;
+  --text-headline-4-line-height: 1.5;
+  --text-headline-4-weight: 600;
 
-  --text-headline-5-size: 2.25rem;
-  --text-headline-5-line-height: 1.2;
-  --text-headline-5-weight: 700;
+  --text-headline-5-size: 1.25rem;
+  --text-headline-5-line-height: 1.5;
+  --text-headline-5-weight: 600;
 
-  --text-body-1-size: 2rem;
-  --text-body-1-line-height: 1.35;
-  --text-body-1-weight: 500;
+  --text-body-1-size: 1rem;
+  --text-body-1-line-height: 1.5;
+  --text-body-1-weight: 400;
 
-  --text-body-2-size: 1.5rem;
-  --text-body-2-line-height: 1.4;
+  --text-body-2-size: 0.875rem;
+  --text-body-2-line-height: 1.5;
   --text-body-2-weight: 500;
 
-  --text-body-3-size: 1.25rem;
-  --text-body-3-line-height: 1.45;
+  --text-body-3-size: 0.75rem;
+  --text-body-3-line-height: 1.5;
   --text-body-3-weight: 500;
+
+  --text-login-title-mobile-size: 2.75rem;
+  --text-login-title-desktop-size: 4.25rem;
+  --text-login-title-line-height: 1.25;
+  --text-login-title-weight: 500;
+  --text-login-label-size: 1rem;
+  --text-login-label-line-height: 1.5;
+  --text-login-input-size: 1rem;
+  --text-login-input-line-height: 1.5;
+  --text-login-button-size: 1rem;
+  --text-login-button-line-height: 1;
+  --text-login-helper-size: 1rem;
+  --text-login-helper-line-height: 1.5;
+  --text-login-register-size: 1rem;
+  --text-login-register-line-height: 1;
 
   --button-height: 4.5rem;
   --button-padding-x: 2rem;
@@ -136,67 +152,71 @@
 
 @layer utilities {
   .headline-1 {
-    font-family: var(--font-heading);
+    font-family: var(--font-noto-serif);
     font-size: var(--text-headline-1-size);
     line-height: var(--text-headline-1-line-height);
     font-weight: var(--text-headline-1-weight);
-    color: var(--color-gray-900);
+    letter-spacing: -0.02em;
   }
 
   .headline-2 {
-    font-family: var(--font-heading);
+    font-family: var(--font-noto-serif);
     font-size: var(--text-headline-2-size);
     line-height: var(--text-headline-2-line-height);
     font-weight: var(--text-headline-2-weight);
-    color: var(--color-gray-900);
+    letter-spacing: -0.02em;
   }
 
   .headline-3 {
-    font-family: var(--font-heading);
+    font-family: var(--font-noto-serif);
     font-size: var(--text-headline-3-size);
     line-height: var(--text-headline-3-line-height);
     font-weight: var(--text-headline-3-weight);
-    color: var(--color-gray-900);
+    letter-spacing: -0.02em;
   }
 
   .headline-4 {
-    font-family: var(--font-body);
+    font-family: var(--font-inter);
     font-size: var(--text-headline-4-size);
     line-height: var(--text-headline-4-line-height);
     font-weight: var(--text-headline-4-weight);
-    color: var(--color-gray-900);
+    letter-spacing: -0.02em;
+    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
   }
 
   .headline-5 {
-    font-family: var(--font-body);
+    font-family: var(--font-inter);
     font-size: var(--text-headline-5-size);
     line-height: var(--text-headline-5-line-height);
     font-weight: var(--text-headline-5-weight);
-    color: var(--color-gray-900);
+    letter-spacing: -0.02em;
+    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
   }
 
   .body-1 {
-    font-family: var(--font-body);
+    font-family: var(--font-inter);
     font-size: var(--text-body-1-size);
     line-height: var(--text-body-1-line-height);
     font-weight: var(--text-body-1-weight);
-    color: var(--color-gray-900);
+    letter-spacing: -0.02em;
   }
 
   .body-2 {
-    font-family: var(--font-body);
+    font-family: var(--font-inter);
     font-size: var(--text-body-2-size);
     line-height: var(--text-body-2-line-height);
     font-weight: var(--text-body-2-weight);
-    color: var(--color-gray-900);
+    letter-spacing: -0.02em;
+    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
   }
 
   .body-3 {
-    font-family: var(--font-body);
+    font-family: var(--font-inter);
     font-size: var(--text-body-3-size);
     line-height: var(--text-body-3-line-height);
     font-weight: var(--text-body-3-weight);
-    color: var(--color-gray-900);
+    letter-spacing: -0.02em;
+    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
   }
 
   .btn {
