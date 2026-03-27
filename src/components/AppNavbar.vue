@@ -27,24 +27,27 @@ import { RouterLink } from "vue-router"
       </nav>
     </section>
 
-    <section class="mx-auto hidden h-25 max-w-7xl items-center justify-between px-10 md:flex">
-      <section class="flex items-center gap-12">
+    <section class="relative mx-auto hidden h-[100px] w-full max-w-[1440px] md:flex">
+      <section class="absolute left-[160px] top-0 flex h-[100px] w-[659px] items-center gap-[48px]">
         <RouterLink to="/" class="flex items-center" aria-label="Go to home">
-          <img src="/logo.svg" alt="Neatly logo" class="h-11 w-auto" />
+          <img src="/logo.svg" alt="Neatly logo" class="h-[45px] w-[167px]" />
         </RouterLink>
 
-        <nav class="flex items-center" aria-label="Main navigation">
-          <RouterLink class="font-open-sans px-6 py-10 text-sm font-normal text-black transition-colors hover:text-green-700" to="/">
+        <nav class="flex h-[100px] w-[444px] items-start p-0" aria-label="Main navigation">
+          <RouterLink
+            class="font-open-sans flex h-[100px] w-[133px] items-center justify-center gap-[10px] px-[24px] py-[10px] text-[14px] leading-[16px] font-normal text-black transition-colors hover:text-green-700"
+            to="/"
+          >
             About Neatly
           </RouterLink>
           <RouterLink
-            class="font-open-sans px-6 py-10 text-sm font-normal text-black transition-colors hover:text-green-700"
+            class="font-open-sans flex h-[100px] w-[168px] items-center justify-center gap-[10px] px-[24px] py-[10px] text-[14px] leading-[16px] font-normal text-black transition-colors hover:text-green-700"
             to="/about"
           >
             Service &amp; Facilities
           </RouterLink>
           <RouterLink
-            class="font-open-sans px-6 py-10 text-sm font-normal text-black transition-colors hover:text-green-700"
+            class="font-open-sans flex h-[100px] w-[143px] items-center justify-center gap-[10px] px-[24px] py-[10px] text-[14px] leading-[16px] font-normal text-black transition-colors hover:text-green-700"
             to="/dev/backend"
           >
             Rooms &amp; Suits
@@ -52,12 +55,14 @@ import { RouterLink } from "vue-router"
         </nav>
       </section>
 
-      <button
-        type="button"
-        class="font-open-sans text-accent px-6 py-10 text-sm font-semibold transition-colors hover:text-orange-600"
-      >
-        Log in
-      </button>
+      <section class="absolute left-[1191px] top-0 flex h-[100px] w-[89px] items-center p-0">
+        <RouterLink
+          to="/login"
+          class="font-open-sans text-accent flex h-[100px] w-[89px] items-center justify-center gap-[10px] px-[24px] py-[10px] text-center text-[14px] leading-[16px] font-semibold transition-colors hover:text-orange-600"
+        >
+          Log in
+        </RouterLink>
+      </section>
     </section>
   </header>
 </template>

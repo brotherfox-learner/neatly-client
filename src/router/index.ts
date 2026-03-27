@@ -22,6 +22,16 @@ const router = createRouter({
       name: 'backend-connection',
       component: () => import('../views/BackendConnectionView.vue'),
     },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/LoginView.vue'),
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('../views/RegisterView.vue'),
+    },
   ],
 })
 
