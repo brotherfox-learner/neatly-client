@@ -140,6 +140,99 @@
   --radius: 0.625rem;
 }
 
+/* Tailwind v4: @utility enables variants (e.g. lg:headline-2); plain @layer .headline-* do not. */
+@utility headline-1 {
+  font-family: var(--font-noto-serif);
+  font-size: var(--text-headline-1-size);
+  line-height: var(--text-headline-1-line-height);
+  font-weight: var(--text-headline-1-weight);
+  letter-spacing: -0.02em;
+}
+
+@utility headline-2 {
+  font-family: var(--font-noto-serif);
+  font-size: var(--text-headline-2-size);
+  line-height: var(--text-headline-2-line-height);
+  font-weight: var(--text-headline-2-weight);
+  letter-spacing: -0.02em;
+}
+
+@utility headline-3 {
+  font-family: var(--font-noto-serif);
+  font-size: var(--text-headline-3-size);
+  line-height: var(--text-headline-3-line-height);
+  font-weight: var(--text-headline-3-weight);
+  letter-spacing: -0.02em;
+}
+
+@utility headline-4 {
+  font-family: var(--font-inter);
+  font-size: var(--text-headline-4-size);
+  line-height: var(--text-headline-4-line-height);
+  font-weight: var(--text-headline-4-weight);
+  letter-spacing: -0.02em;
+  font-feature-settings:
+    "ss01" on,
+    "ss03" on,
+    "cv03" on,
+    "cv04" on,
+    "cv06" on,
+    "cv09" on;
+}
+
+@utility headline-5 {
+  font-family: var(--font-inter);
+  font-size: var(--text-headline-5-size);
+  line-height: var(--text-headline-5-line-height);
+  font-weight: var(--text-headline-5-weight);
+  letter-spacing: -0.02em;
+  font-feature-settings:
+    "ss01" on,
+    "ss03" on,
+    "cv03" on,
+    "cv04" on,
+    "cv06" on,
+    "cv09" on;
+}
+
+@utility body-1 {
+  font-family: var(--font-inter);
+  font-size: var(--text-body-1-size);
+  line-height: var(--text-body-1-line-height);
+  font-weight: var(--text-body-1-weight);
+  letter-spacing: -0.02em;
+}
+
+@utility body-2 {
+  font-family: var(--font-inter);
+  font-size: var(--text-body-2-size);
+  line-height: var(--text-body-2-line-height);
+  font-weight: var(--text-body-2-weight);
+  letter-spacing: -0.02em;
+  font-feature-settings:
+    "ss01" on,
+    "ss03" on,
+    "cv03" on,
+    "cv04" on,
+    "cv06" on,
+    "cv09" on;
+}
+
+@utility body-3 {
+  font-family: var(--font-inter);
+  font-size: var(--text-body-3-size);
+  line-height: var(--text-body-3-line-height);
+  font-weight: var(--text-body-3-weight);
+  letter-spacing: -0.02em;
+  font-feature-settings:
+    "ss01" on,
+    "ss03" on,
+    "cv03" on,
+    "cv04" on,
+    "cv06" on,
+    "cv09" on;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -151,74 +244,6 @@
 }
 
 @layer utilities {
-  .headline-1 {
-    font-family: var(--font-noto-serif);
-    font-size: var(--text-headline-1-size);
-    line-height: var(--text-headline-1-line-height);
-    font-weight: var(--text-headline-1-weight);
-    letter-spacing: -0.02em;
-  }
-
-  .headline-2 {
-    font-family: var(--font-noto-serif);
-    font-size: var(--text-headline-2-size);
-    line-height: var(--text-headline-2-line-height);
-    font-weight: var(--text-headline-2-weight);
-    letter-spacing: -0.02em;
-  }
-
-  .headline-3 {
-    font-family: var(--font-noto-serif);
-    font-size: var(--text-headline-3-size);
-    line-height: var(--text-headline-3-line-height);
-    font-weight: var(--text-headline-3-weight);
-    letter-spacing: -0.02em;
-  }
-
-  .headline-4 {
-    font-family: var(--font-inter);
-    font-size: var(--text-headline-4-size);
-    line-height: var(--text-headline-4-line-height);
-    font-weight: var(--text-headline-4-weight);
-    letter-spacing: -0.02em;
-    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
-  }
-
-  .headline-5 {
-    font-family: var(--font-inter);
-    font-size: var(--text-headline-5-size);
-    line-height: var(--text-headline-5-line-height);
-    font-weight: var(--text-headline-5-weight);
-    letter-spacing: -0.02em;
-    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
-  }
-
-  .body-1 {
-    font-family: var(--font-inter);
-    font-size: var(--text-body-1-size);
-    line-height: var(--text-body-1-line-height);
-    font-weight: var(--text-body-1-weight);
-    letter-spacing: -0.02em;
-  }
-
-  .body-2 {
-    font-family: var(--font-inter);
-    font-size: var(--text-body-2-size);
-    line-height: var(--text-body-2-line-height);
-    font-weight: var(--text-body-2-weight);
-    letter-spacing: -0.02em;
-    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
-  }
-
-  .body-3 {
-    font-family: var(--font-inter);
-    font-size: var(--text-body-3-size);
-    line-height: var(--text-body-3-line-height);
-    font-weight: var(--text-body-3-weight);
-    letter-spacing: -0.02em;
-    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
-  }
-
   .btn {
     display: inline-flex;
     align-items: center;

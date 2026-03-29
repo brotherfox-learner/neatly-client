@@ -21,7 +21,9 @@ import { RouterLink } from "vue-router"
         <section
           class="flex w-full flex-col items-start gap-10 px-4 py-10 lg:w-[452px] lg:px-10 lg:pt-[120px] lg:pb-0 xl:ml-[120px] xl:px-0 xl:pt-[150px]"
         >
-          <h1 class="headline-3 lg:headline-2 text-green-800 flex h-[55px] w-full items-center">
+          <h1
+            class="headline-3 lg:headline-2 text-green-800 flex h-[55px] w-full items-center lg:h-auto lg:min-h-0  lg:mb-[10px]"
+          >
             Log In
           </h1>
 
