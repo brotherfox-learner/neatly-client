@@ -5,7 +5,7 @@ import { RouterLink } from "vue-router"
 <template>
   <article class="bg-white lg:bg-green-700">
     <section
-      class="mx-auto w-full max-w-[1440px] lg:grid lg:h-[min(924px,calc(100dvh-100px))] lg:min-h-[700px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[708px_732px]"
+      class="mx-auto w-full max-w-[1440px] lg:grid lg:h-[min(924px,calc(100dvh-100px))] lg:min-h-[700px] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,708px)_minmax(0,732px)]"
     >
       <section class="relative h-[269px] w-full lg:hidden">
         <img src="/loginimage.svg" alt="Hotel exterior with pool" class="h-full w-full object-cover" />
@@ -19,7 +19,7 @@ import { RouterLink } from "vue-router"
 
       <section class="bg-background flex min-h-[495px] items-end lg:h-full lg:items-start">
         <section
-          class="flex w-full flex-col items-start gap-10 px-4 py-10 lg:w-[452px] lg:px-10 lg:pt-[120px] lg:pb-0 xl:ml-[120px] xl:px-0 xl:pt-[150px]"
+          class="flex w-full flex-col items-start gap-10 px-4 py-10 lg:w-[452px] lg:px-10 lg:pt-[120px] lg:pb-0 xl:ml-[min(120px,8.333333vw)] xl:px-0 xl:pt-[150px]"
         >
           <h1 class="headline-3 lg:headline-2 text-green-800 flex h-[55px] w-full items-center">
             Log In

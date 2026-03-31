@@ -6,11 +6,11 @@
         <div class="pointer-events-none absolute inset-0 bg-linear-to-b from-black/60 to-transparent"></div>
       </section>
 
-      <section class="w-full px-[16px] py-[40px] lg:absolute lg:left-1/2 lg:top-[60px] lg:w-[1092px] lg:-translate-x-1/2 lg:p-0">
+      <section class="w-full px-[16px] py-[40px] lg:absolute lg:left-1/2 lg:top-[60px] lg:w-[min(1092px,100%)] lg:-translate-x-1/2 lg:p-0">
         <section class="bg-background flex flex-col items-start gap-[40px] lg:gap-[60px] lg:rounded-[4px] lg:p-[80px] lg:shadow-[4px_4px_16px_rgba(0,0,0,0.08)]">
-          <h1 class="headline-3 lg:headline-2 text-green-800 flex h-[55px] w-[343px] items-center lg:w-[932px]">Register</h1>
+          <h1 class="headline-3 lg:headline-2 text-green-800 flex h-[55px] w-[343px] items-center lg:w-full">Register</h1>
 
-          <form class="flex w-[343px] flex-col gap-[24px] lg:w-[932px] lg:gap-[40px]" @submit.prevent>
+          <form class="flex w-[343px] flex-col gap-[24px] lg:w-full lg:gap-[40px]" @submit.prevent>
             <h2 class="headline-5 text-gray-600 tracking-[-0.02em]">Basic Information</h2>
 
             <section class="grid w-full grid-cols-1 gap-[24px] lg:grid-cols-2 lg:gap-x-[40px] lg:gap-y-[40px]">
