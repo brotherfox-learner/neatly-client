@@ -14,10 +14,10 @@ const toggle = (list: any, value: string) => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:pt-[80px]">
+  <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:py-[80px]">
     <!-- ===== HEADER ===== -->
     <div class="flex flex-col gap-6 py-[24px] px-[16px] bg-[#f7f7fb] lg:gap-10 lg:p-0">
-      <h1 class="headline-3 text-green-800">Booking Room</h1>
+      <h1 class="headline-3 text-green-800 lg:headline-2">Booking Room</h1>
 
       <!-- STEP -->
       <div
@@ -25,7 +25,9 @@ const toggle = (list: any, value: string) => {
       >
         <!-- Step 1 -->
         <div class="flex items-center gap-4">
-          <div class="w-[66px] h-[50px] bg-orange-100 rounded-sm flex items-center justify-center">
+          <div
+            class="w-[66px] h-[50px] lg:h-[66px] bg-orange-100 rounded-sm flex items-center justify-center"
+          >
             <span class="headline-4 text-orange-500">1</span>
           </div>
           <span class="headline-5 text-gray-900">Basic Information</span>
@@ -33,7 +35,9 @@ const toggle = (list: any, value: string) => {
 
         <!-- Step 2 -->
         <div class="flex items-center gap-4">
-          <div class="w-[66px] h-[50px] bg-orange-500 rounded-sm flex items-center justify-center">
+          <div
+            class="w-[66px] h-[50px] lg:h-[66px] bg-orange-500 rounded-sm flex items-center justify-center"
+          >
             <span class="headline-4 text-white">2</span>
           </div>
           <span class="headline-5 text-orange-500">Payment Method</span>
@@ -41,10 +45,12 @@ const toggle = (list: any, value: string) => {
 
         <!-- Step 3 -->
         <div class="flex items-center gap-4">
-          <div class="w-[66px] h-[50px] bg-gray-200 rounded-sm flex items-center justify-center">
+          <div
+            class="w-[66px] h-[50px] lg:h-[66px] bg-gray-200 rounded-sm flex items-center justify-center"
+          >
             <span class="headline-4 text-gray-600">3</span>
           </div>
-          <span class="headline-5 text-gray-600">Confirm</span>
+          <span class="headline-5 text-gray-600">Payment Method</span>
         </div>
       </div>
     </div>
@@ -52,246 +58,236 @@ const toggle = (list: any, value: string) => {
     <!-- ===== MAIN ===== -->
     <div class="flex flex-col lg:flex-row lg:gap-6">
       <!-- ===== LEFT ===== -->
-      <div class="flex flex-col gap-6 grow">
-        <!-- ===== FORM ===== -->
-        <div class="bg-white border border-gray-300 rounded py-6 px-4 flex flex-col gap-10">
-          <!-- STANDARD REQUEST -->
-          <div class="flex flex-col gap-6">
-            <div class="text-gray-600">
-              <h2 class="headline-5">Standard Request</h2>
-              <p class="body-2">These requests are not confirmed (Depend on the available room)</p>
-            </div>
-            <div class="flex flex-col gap-4">
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(standardRequests, 'early-checkin')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="
-                    standardRequests.includes('early-checkin') && 'bg-orange-500 border-orange-300'
-                  "
-                >
-                  <span v-if="standardRequests.includes('early-checkin')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">Early check-in</span>
-              </label>
-
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(standardRequests, 'late-checkout')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="
-                    standardRequests.includes('late-checkout') && 'bg-orange-500 border-orange-300'
-                  "
-                >
-                  <span v-if="standardRequests.includes('late-checkout')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">Late check-out</span>
-              </label>
-
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(standardRequests, 'non-smoking')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="
-                    standardRequests.includes('non-smoking') && 'bg-orange-500 border-orange-300'
-                  "
-                >
-                  <span v-if="standardRequests.includes('non-smoking')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">Non-smoking room</span>
-              </label>
-
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(standardRequests, 'high-floor')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="
-                    standardRequests.includes('high-floor') && 'bg-orange-500 border-orange-300'
-                  "
-                >
-                  <span v-if="standardRequests.includes('high-floor')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">A room on the high floor</span>
-              </label>
-
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(standardRequests, 'quiet-room')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="
-                    standardRequests.includes('quiet-room') && 'bg-orange-500 border-orange-300'
-                  "
-                >
-                  <span v-if="standardRequests.includes('quiet-room')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">A quiet room</span>
-              </label>
-            </div>
+      <!-- ===== FORM ===== -->
+      <div
+        class="grow bg-white border border-gray-300 rounded-sm py-6 px-4 flex flex-col gap-6 lg:p-10 lg:gap-10"
+      >
+        <!-- STANDARD REQUEST -->
+        <div class="flex flex-col gap-6 lg:gap-10">
+          <div class="text-gray-600">
+            <h2 class="headline-5 lg:text-gray-800">Standard Request</h2>
+            <p class="body-2">These requests are not confirmed (Depend on the available room)</p>
           </div>
-
-          <!-- SPECIAL REQUEST -->
-          <div class="flex flex-col gap-6">
-            <div class="text-gray-600">
-              <h2 class="headline-5">Special Request</h2>
-              <p class="body-2">Additional charge may apply</p>
-            </div>
-
-            <div class="flex flex-col gap-4">
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" class="hidden" @change="toggle(specialRequests, 'cot')" />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="specialRequests.includes('cot') && 'bg-orange-500 border-orange-300'"
+          <div class="flex flex-col gap-4 lg:gap-6">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="hidden"
+                @change="toggle(standardRequests, 'early-checkin')"
+              />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="
+                  standardRequests.includes('early-checkin') && 'bg-orange-500 border-orange-300'
+                "
+              >
+                <span v-if="standardRequests.includes('early-checkin')" class="text-white text-sm"
+                  >✓</span
                 >
-                  <span v-if="specialRequests.includes('cot')" class="text-white text-sm">✓</span>
-                </div>
-                <span class="body-1 text-gray-700">Baby cot (+THB 400)</span>
-              </label>
+              </div>
+              <span class="body-1 text-gray-700">Early check-in</span>
+            </label>
 
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(specialRequests, 'airport')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="specialRequests.includes('airport') && 'bg-orange-500 border-orange-300'"
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="hidden"
+                @change="toggle(standardRequests, 'late-checkout')"
+              />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="
+                  standardRequests.includes('late-checkout') && 'bg-orange-500 border-orange-300'
+                "
+              >
+                <span v-if="standardRequests.includes('late-checkout')" class="text-white text-sm"
+                  >✓</span
                 >
-                  <span v-if="specialRequests.includes('airport')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">Airport transfer (+THB 200)</span>
-              </label>
+              </div>
+              <span class="body-1 text-gray-700">Late check-out</span>
+            </label>
 
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(specialRequests, 'extra-bed')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="
-                    specialRequests.includes('extra-bed') && 'bg-orange-500 border-orange-300'
-                  "
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="hidden"
+                @change="toggle(standardRequests, 'non-smoking')"
+              />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="
+                  standardRequests.includes('non-smoking') && 'bg-orange-500 border-orange-300'
+                "
+              >
+                <span v-if="standardRequests.includes('non-smoking')" class="text-white text-sm"
+                  >✓</span
                 >
-                  <span v-if="specialRequests.includes('extra-bed')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">Extra bed (+THB 500)</span>
-              </label>
+              </div>
+              <span class="body-1 text-gray-700">Non-smoking room</span>
+            </label>
 
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(specialRequests, 'extra-pillow')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="
-                    specialRequests.includes('extra-pillow') && 'bg-orange-500 border-orange-300'
-                  "
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="hidden"
+                @change="toggle(standardRequests, 'high-floor')"
+              />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="
+                  standardRequests.includes('high-floor') && 'bg-orange-500 border-orange-300'
+                "
+              >
+                <span v-if="standardRequests.includes('high-floor')" class="text-white text-sm"
+                  >✓</span
                 >
-                  <span v-if="specialRequests.includes('extra-pillow')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">Extra pillows (+THB 100)</span>
-              </label>
+              </div>
+              <span class="body-1 text-gray-700">A room on the high floor</span>
+            </label>
 
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(specialRequests, 'phone-charger')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="
-                    specialRequests.includes('phone-charger') && 'bg-orange-500 border-orange-300'
-                  "
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="hidden"
+                @change="toggle(standardRequests, 'quiet-room')"
+              />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="
+                  standardRequests.includes('quiet-room') && 'bg-orange-500 border-orange-300'
+                "
+              >
+                <span v-if="standardRequests.includes('quiet-room')" class="text-white text-sm"
+                  >✓</span
                 >
-                  <span v-if="specialRequests.includes('phone-charger')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">Phone chargers and adapters (+THB 100)</span>
-              </label>
-
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="hidden"
-                  @change="toggle(specialRequests, 'breakfast')"
-                />
-                <div
-                  class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                  :class="
-                    specialRequests.includes('breakfast') && 'bg-orange-500 border-orange-300'
-                  "
-                >
-                  <span v-if="specialRequests.includes('breakfast')" class="text-white text-sm"
-                    >✓</span
-                  >
-                </div>
-                <span class="body-1 text-gray-700">Breakfast (+150)</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- TEXTAREA -->
-          <div class="flex flex-col gap-1">
-            <label class="body-1 text-gray-900">Additional Note</label>
-            <textarea
-              class="border border-gray-400 rounded-sm p-3 pr-4 h-24 resize-none"
-              placeholder="Enter your request"
-            />
+              </div>
+              <span class="body-1 text-gray-700">A quiet room</span>
+            </label>
           </div>
         </div>
 
+        <!-- SPECIAL REQUEST -->
+        <div class="flex flex-col gap-6 lg:gap-10">
+          <div class="text-gray-600">
+            <h2 class="headline-5 lg:text-gray-800">Special Request</h2>
+            <p class="body-2">Additional charge may apply</p>
+          </div>
+
+          <div class="flex flex-col gap-4 lg:gap-6">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" class="hidden" @change="toggle(specialRequests, 'cot')" />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="specialRequests.includes('cot') && 'bg-orange-500 border-orange-300'"
+              >
+                <span v-if="specialRequests.includes('cot')" class="text-white text-sm">✓</span>
+              </div>
+              <span class="body-1 text-gray-700">Baby cot (+THB 400)</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" class="hidden" @change="toggle(specialRequests, 'airport')" />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="specialRequests.includes('airport') && 'bg-orange-500 border-orange-300'"
+              >
+                <span v-if="specialRequests.includes('airport')" class="text-white text-sm">✓</span>
+              </div>
+              <span class="body-1 text-gray-700">Airport transfer (+THB 200)</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="hidden"
+                @change="toggle(specialRequests, 'extra-bed')"
+              />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="specialRequests.includes('extra-bed') && 'bg-orange-500 border-orange-300'"
+              >
+                <span v-if="specialRequests.includes('extra-bed')" class="text-white text-sm"
+                  >✓</span
+                >
+              </div>
+              <span class="body-1 text-gray-700">Extra bed (+THB 500)</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="hidden"
+                @change="toggle(specialRequests, 'extra-pillow')"
+              />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="
+                  specialRequests.includes('extra-pillow') && 'bg-orange-500 border-orange-300'
+                "
+              >
+                <span v-if="specialRequests.includes('extra-pillow')" class="text-white text-sm"
+                  >✓</span
+                >
+              </div>
+              <span class="body-1 text-gray-700">Extra pillows (+THB 100)</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="hidden"
+                @change="toggle(specialRequests, 'phone-charger')"
+              />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="
+                  specialRequests.includes('phone-charger') && 'bg-orange-500 border-orange-300'
+                "
+              >
+                <span v-if="specialRequests.includes('phone-charger')" class="text-white text-sm"
+                  >✓</span
+                >
+              </div>
+              <span class="body-1 text-gray-700">Phone chargers and adapters (+THB 100)</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="hidden"
+                @change="toggle(specialRequests, 'breakfast')"
+              />
+              <div
+                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                :class="specialRequests.includes('breakfast') && 'bg-orange-500 border-orange-300'"
+              >
+                <span v-if="specialRequests.includes('breakfast')" class="text-white text-sm"
+                  >✓</span
+                >
+              </div>
+              <span class="body-1 text-gray-700">Breakfast (+150)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- TEXTAREA -->
+        <div class="flex flex-col gap-1">
+          <label class="body-1 text-gray-900">Additional Request</label>
+          <textarea
+            class="border border-gray-400 rounded-sm p-3 pr-4 h-24 resize-none"
+            placeholder="Enter your request"
+          />
+        </div>
+
         <!-- ===== ACTION (DESKTOP) ===== -->
-        <div class="hidden lg:flex px-4 py-6 items-center justify-between">
+        <div class="hidden lg:flex items-center justify-between">
           <Button variant="ghost">Back</Button>
-          <Button variant="primary" size="xs">Confirm</Button>
+          <Button variant="primary" size="xs">Next</Button>
         </div>
       </div>
 
       <!-- ===== RIGHT ===== -->
-      <div class="flex flex-col gap-6 lg:max-w-[358px]">
+      <div class="flex flex-col gap-4 lg:max-w-[358px]">
         <!-- ===== SUMMARY ===== -->
         <div class="bg-green-700 text-white">
           <!-- HEADER -->
@@ -351,7 +347,7 @@ const toggle = (list: any, value: string) => {
         </div>
 
         <!-- NOTE -->
-        <ul class="mt-4 bg-gray-300 p-4 space-y-5">
+        <ul class="bg-gray-300 p-4 space-y-5">
           <li class="flex gap-2">
             <div class="mt-2 w-1 h-1 bg-green-600 rounded-full shrink-0"></div>
             <p class="body-3 text-green-600">
@@ -371,7 +367,7 @@ const toggle = (list: any, value: string) => {
       <!-- ACTION -->
       <div class="lg:hidden px-4 py-6 flex items-center justify-between">
         <Button variant="ghost">Back</Button>
-        <Button variant="primary" size="xs">Confirm</Button>
+        <Button variant="primary" size="xs">Next</Button>
       </div>
     </div>
   </div>

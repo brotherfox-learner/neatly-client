@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 <template>
   <div
-    class="max-w-[738px] mx-auto bg-background flex flex-col min-h-screen lg:pt-[80px]"
+    class="max-w-[738px] mx-auto bg-background flex flex-col min-h-screen lg:py-[80px]"
   >
     <!-- ===== TOP (SUCCESS) ===== -->
     <div class="bg-green-800 text-white px-6 py-10 text-center flex flex-col gap-4">
@@ -17,27 +17,27 @@ import { Button } from '@/components/ui/button'
     </div>
 
     <!-- ===== CONTENT ===== -->
-    <div class="bg-green-700 text-white flex-1 px-4 pt-6 pb-10 flex flex-col gap-6">
+    <div class="bg-green-700 text-white flex-1 px-4 pt-6 pb-10 flex flex-col gap-6 lg:gap-10">
       <!-- CARD -->
-      <div class="bg-green-600 rounded-sm p-4 flex flex-col gap-6">
+      <div class="bg-green-600 rounded-sm p-4 flex flex-col gap-6 lg:p-6 lg:flex-row lg:gap-10">
         <!-- DATE -->
-        <div>
+        <div class="grow">
           <div class="body-1 py-1 flex flex-row gap-2">
-            <span>Th, 19 Oct 2022</span>
+            <span>Thu, 19 Oct 2022</span>
             <span>-</span>
-            <span>Fr, 20 Oct 2022</span>
+            <span>Fri, 20 Oct 2022</span>
           </div>
           <div class="body-1 py-1">2 Guests</div>
         </div>
 
         <!-- CHECK IN / OUT -->
-        <div class="flex flex-row items-stretch gap-[24px]">
-          <div class="flex-1">
+        <div class="flex flex-row gap-[24px]">
+          <div>
             <div class="body-1 font-semibold!">Check-in</div>
             <div class="body-1">After 2:00 PM</div>
           </div>
 
-          <div class="flex-1">
+          <div>
             <div class="body-1 font-semibold!">Check-out</div>
             <div class="body-1">Before 12:00 PM</div>
           </div>
@@ -45,7 +45,7 @@ import { Button } from '@/components/ui/button'
       </div>
 
       <!-- PAYMENT -->
-      <div class="flex gap-4 text-green-300">
+      <div class="flex gap-4 text-green-300 lg:self-end">
         <span>Payment success via</span>
         <span class="font-semibold"> Credit Card - *888 </span>
       </div>
@@ -68,7 +68,7 @@ import { Button } from '@/components/ui/button'
         </div>
 
         <!-- TOTAL -->
-        <div class="border-t border-green-600 mt-4 pt-4 flex items-center justify-between">
+        <div class="border-t border-green-600 mt-4 pt-4 flex items-center justify-between lg:pt-[24px]">
           <span class="body-1 text-green-300">Total</span>
           <span class="headline-5">THB 2,300.00</span>
         </div>
@@ -76,14 +76,14 @@ import { Button } from '@/components/ui/button'
     </div>
 
     <!-- ===== ACTION (MOBILE) ===== -->
-    <div class="lg:hidden px-4 py-6 flex items-center justify-between">
-      <Button variant="ghost">Back</Button>
-      <Button variant="primary" size="xs">Confirm</Button>
+    <div class="lg:hidden px-4 py-6 flex flex-col items-center justify-between">
+      <Button variant="primary" size="xs">Back to Home</Button>
+      <Button variant="ghost">Check Booking Detail</Button>
     </div>
     <!-- ===== ACTION (DESKTOP) ===== -->
-    <div class="hidden lg:flex px-4 py-6 items-center justify-between">
-      <Button variant="ghost">Back</Button>
-      <Button variant="primary" size="xs">Confirm</Button>
+    <div class="hidden lg:flex px-4 py-6 items-center justify-between lg:mx-auto lg:p-0 lg:mt-[60px]">
+      <Button variant="ghost">Check Booking Detail</Button>
+      <Button variant="primary" size="xs">Back to Home</Button>
     </div>
   </div>
 </template>

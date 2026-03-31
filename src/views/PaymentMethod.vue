@@ -12,10 +12,10 @@ const paymentMethod = ref<PaymentMethod>('card')
 </script>
 
 <template>
-  <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:pt-[80px]">
+  <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:py-[80px]">
     <!-- ===== HEADER ===== -->
     <div class="flex flex-col gap-6 py-[24px] px-[16px] bg-[#f7f7fb] lg:gap-10 lg:p-0">
-      <h1 class="headline-3 text-green-800">Booking Room</h1>
+      <h1 class="headline-3 text-green-800 lg:headline-2">Booking Room</h1>
 
       <!-- STEP -->
       <div
@@ -23,7 +23,9 @@ const paymentMethod = ref<PaymentMethod>('card')
       >
         <!-- Step 1 -->
         <div class="flex items-center gap-4">
-          <div class="w-[66px] h-[50px] bg-orange-100 rounded-sm flex items-center justify-center">
+          <div
+            class="w-[66px] h-[50px] lg:h-[66px] bg-orange-100 rounded-sm flex items-center justify-center"
+          >
             <span class="headline-4 text-orange-500">1</span>
           </div>
           <span class="headline-5 text-gray-900">Basic Information</span>
@@ -31,7 +33,9 @@ const paymentMethod = ref<PaymentMethod>('card')
 
         <!-- Step 2 -->
         <div class="flex items-center gap-4">
-          <div class="w-[66px] h-[50px] bg-orange-100 rounded-sm flex items-center justify-center">
+          <div
+            class="w-[66px] h-[50px] lg:h-[66px] bg-orange-100 rounded-sm flex items-center justify-center"
+          >
             <span class="headline-4 text-orange-500">2</span>
           </div>
           <span class="headline-5 text-gray-900">Payment Method</span>
@@ -39,134 +43,132 @@ const paymentMethod = ref<PaymentMethod>('card')
 
         <!-- Step 3 -->
         <div class="flex items-center gap-4">
-          <div class="w-[66px] h-[50px] bg-orange-500 rounded-sm flex items-center justify-center">
+          <div
+            class="w-[66px] h-[50px] lg:h-[66px] bg-orange-500 rounded-sm flex items-center justify-center"
+          >
             <span class="headline-4 text-white">3</span>
           </div>
           <span class="headline-5 text-orange-500">Payment Method</span>
         </div>
       </div>
     </div>
+
     <!-- ===== MAIN ===== -->
     <div class="flex flex-col lg:flex-row lg:gap-6">
       <!-- ===== LEFT ===== -->
-      <div class="flex flex-col gap-6 grow">
-        <!-- ===== PAYMENT ===== -->
-        <div class="bg-white border border-gray-300 rounded-sm px-4 py-6 flex flex-col gap-10">
-          <!-- SELECT PAYMENT -->
-          <div class="flex gap-2">
-            <!-- CARD -->
-            <button
-              class="flex-1 h-[60px] rounded-sm border shadow-1 flex items-center justify-center gap-2"
-              :class="
-                paymentMethod === 'card'
-                  ? 'border-orange-500 text-orange-500'
-                  : 'border-gray-300 text-gray-500'
-              "
-              @click="paymentMethod = 'card'"
-            >
-              <CreditCardIcon class="w-8 h-8" />
-              Credit Card
-            </button>
+      <!-- ===== PAYMENT ===== -->
+      <div
+        class="grow bg-white border border-gray-300 rounded-sm px-4 py-6 flex flex-col gap-10 lg:p-10"
+      >
+        <!-- SELECT PAYMENT -->
+        <div class="flex gap-2 lg:gap-4">
+          <!-- CARD -->
+          <button
+            class="flex-1 py-[14px] rounded-sm border shadow-1 flex items-center justify-center gap-2 cursor-pointer lg:py-[24px] lg:headline-5"
+            :class="
+              paymentMethod === 'card'
+                ? 'border-orange-500 text-orange-500'
+                : 'border-gray-300 text-gray-500'
+            "
+            @click="paymentMethod = 'card'"
+          >
+            <CreditCardIcon class="w-8 h-8" />
+            Credit Card
+          </button>
 
-            <!-- CASH -->
-            <button
-              class="flex-1 h-[60px] rounded-sm border shadow-1 flex items-center justify-center gap-2"
-              :class="
-                paymentMethod === 'cash'
-                  ? 'border-orange-500 text-orange-500'
-                  : 'border-gray-300 text-gray-500'
-              "
-              @click="paymentMethod = 'cash'"
-            >
-              <BanknotesIcon class="w-8 h-8" />
-              Cash
-            </button>
+          <!-- CASH -->
+          <button
+            class="flex-1 py-[14px] rounded-sm border shadow-1 flex items-center justify-center gap-2 cursor-pointer lg:py-[24px] lg:headline-5"
+            :class="
+              paymentMethod === 'cash'
+                ? 'border-orange-500 text-orange-500'
+                : 'border-gray-300 text-gray-500'
+            "
+            @click="paymentMethod = 'cash'"
+          >
+            <BanknotesIcon class="w-8 h-8" />
+            Cash
+          </button>
+        </div>
+
+        <!-- ===== CARD FORM ===== -->
+        <div v-if="paymentMethod === 'card'" class="flex flex-col gap-6 lg:gap-10">
+          <h2 class="headline-5 text-gray-600 lg:text-gray-800">Credit Card</h2>
+
+          <!-- Card Number -->
+          <div class="flex flex-col gap-1">
+            <label class="body-1 text-gray-900">Card Number</label>
+            <input
+              class="border border-gray-400 rounded-sm p-3 pr-4"
+              placeholder="xxxx-xxxx-xxxx-xxxx"
+            />
           </div>
 
-          <!-- ===== CARD FORM ===== -->
-          <div v-if="paymentMethod === 'card'" class="flex flex-col gap-6">
-            <h2 class="headline-5 text-gray-600">Credit Card</h2>
+          <!-- Name -->
+          <div class="flex flex-col gap-1">
+            <label class="body-1 text-gray-900">Card Owner</label>
+            <input class="border border-gray-400 rounded-sm p-3 pr-4" placeholder="Name on card" />
+          </div>
 
-            <!-- Card Number -->
-            <div class="flex flex-col gap-1">
-              <label class="body-1 text-gray-900">Card Number</label>
+          <!-- Expiry + CVV -->
+          <div class="flex gap-10">
+            <div class="flex flex-col gap-1 flex-1">
+              <label class="body-1 text-gray-900">Expiry</label>
               <input
-                class="border border-gray-400 rounded-sm p-3 pr-4"
-                placeholder="xxxx-xxxx-xxxx-xxxx"
+                class="w-full border border-gray-400 rounded-sm p-3 pr-4"
+                placeholder="MM/YY"
               />
             </div>
 
-            <!-- Name -->
-            <div class="flex flex-col gap-1">
-              <label class="body-1 text-gray-900">Card Owner</label>
-              <input
-                class="border border-gray-400 rounded-sm p-3 pr-4"
-                placeholder="Name on card"
-              />
-            </div>
-
-            <!-- Expiry + CVV -->
-            <div class="flex gap-10">
-              <div class="flex flex-col gap-1 flex-1">
-                <label class="body-1 text-gray-900">Expiry</label>
-                <input
-                  class="w-full border border-gray-400 rounded-sm p-3 pr-4"
-                  placeholder="MM/YY"
-                />
-              </div>
-
-              <div class="flex flex-col gap-1 flex-1">
-                <label class="body-1 text-gray-900">CVV</label>
-                <input
-                  class="w-full border border-gray-400 rounded-sm p-3 pr-4"
-                  placeholder="123"
-                />
-              </div>
-            </div>
-
-            <!-- PROMO -->
-            <div class="border-t py-6">
-              <div class="flex flex-col gap-1">
-                <label class="body-1 text-gray-900">Promotion Code</label>
-                <input
-                  class="border border-gray-400 rounded-sm p-3 pr-4 uppercase"
-                  placeholder="Enter code"
-                />
-              </div>
+            <div class="flex flex-col gap-1 flex-1">
+              <label class="body-1 text-gray-900">CVV</label>
+              <input class="w-full border border-gray-400 rounded-sm p-3 pr-4" placeholder="123" />
             </div>
           </div>
 
-          <!-- ===== CASH INFO ===== -->
-          <div v-else class="flex flex-col gap-6">
-            <h2 class="headline-5 text-gray-600">Cash</h2>
-            <div class="bg-gray-200 px-6 py-4 rounded-sm flex gap-4 items-center">
-              <HandCash class="w-[50px] h-[50px] text-[#E76B39]" />
-              <p class="body-1 text-gray-900 flex-1">
-                Pay at the hotel with cash or cheque. No payment is required until you check in
-              </p>
-            </div>
-
-            <!-- PROMO -->
-            <div class="border-t py-6">
-              <div class="flex flex-col gap-1">
-                <label class="body-1 text-gray-900">Promotion Code</label>
-                <input
-                  class="border border-gray-400 rounded-sm p-3 pr-4 uppercase"
-                  placeholder="Enter code"
-                />
-              </div>
+          <!-- PROMO -->
+          <div class="border-t py-6">
+            <div class="flex flex-col gap-1">
+              <label class="body-1 text-gray-900">Promotion Code</label>
+              <input
+                class="border border-gray-400 rounded-sm p-3 pr-4 uppercase"
+                placeholder="Enter code"
+              />
             </div>
           </div>
         </div>
+
+        <!-- ===== CASH INFO ===== -->
+        <div v-else class="flex flex-col gap-6 lg:gap-10">
+          <h2 class="headline-5 text-gray-600 lg:text-gray-800">Cash</h2>
+          <div class="bg-gray-200 px-6 py-4 rounded-sm flex gap-4 items-center">
+            <HandCash class="w-[50px] h-[50px] text-[#E76B39]" />
+            <p class="body-1 text-gray-900 flex-1">
+              Pay at the hotel with cash or cheque. No payment is required until you check in
+            </p>
+          </div>
+
+          <!-- PROMO -->
+          <div class="border-t py-6">
+            <div class="flex flex-col gap-1">
+              <label class="body-1 text-gray-900">Promotion Code</label>
+              <input
+                class="border border-gray-400 rounded-sm p-3 pr-4 uppercase"
+                placeholder="Enter code"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- ===== ACTION (DESKTOP) ===== -->
-        <div class="hidden lg:flex px-4 py-6 items-center justify-between">
+        <div class="hidden lg:flex items-center justify-between">
           <Button variant="ghost">Back</Button>
           <Button variant="primary" size="xs">Confirm Booking</Button>
         </div>
       </div>
 
       <!-- ===== RIGHT ===== -->
-      <div class="flex flex-col gap-6 lg:max-w-[358px]">
+      <div class="flex flex-col gap-4 lg:max-w-[358px]">
         <!-- ===== SUMMARY ===== -->
         <div class="bg-green-700 text-white">
           <!-- HEADER -->
@@ -226,7 +228,7 @@ const paymentMethod = ref<PaymentMethod>('card')
         </div>
 
         <!-- NOTE -->
-        <ul class="mt-4 bg-gray-300 p-4 space-y-5">
+        <ul class="bg-gray-300 p-4 space-y-5">
           <li class="flex gap-2">
             <div class="mt-2 w-1 h-1 bg-green-600 rounded-full shrink-0"></div>
             <p class="body-3 text-green-600">
@@ -243,11 +245,10 @@ const paymentMethod = ref<PaymentMethod>('card')
           </li>
         </ul>
       </div>
-
       <!-- ACTION -->
       <div class="lg:hidden px-4 py-6 flex items-center justify-between">
         <Button variant="ghost">Back</Button>
-        <Button variant="primary" size="xs">Confirm Booking</Button>
+        <Button variant="primary" size="xs">Next</Button>
       </div>
     </div>
   </div>

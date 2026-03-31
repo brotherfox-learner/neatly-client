@@ -4,10 +4,10 @@ import { BriefcaseBusiness } from 'lucide-vue-next'
 </script>
 
 <template>
-  <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:pt-[80px]">
+  <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:py-[80px]">
     <!-- ===== HEADER ===== -->
     <div class="flex flex-col gap-6 py-[24px] px-[16px] bg-[#f7f7fb] lg:gap-10 lg:p-0">
-      <h1 class="headline-3 text-green-800">Booking Room</h1>
+      <h1 class="headline-3 text-green-800 lg:headline-2">Booking Room</h1>
 
       <!-- STEP -->
       <div
@@ -15,7 +15,9 @@ import { BriefcaseBusiness } from 'lucide-vue-next'
       >
         <!-- Step 1 -->
         <div class="flex items-center gap-4">
-          <div class="w-[66px] h-[50px] bg-orange-500 rounded-sm flex items-center justify-center">
+          <div
+            class="w-[66px] h-[50px] lg:h-[66px] bg-orange-500 rounded-sm flex items-center justify-center"
+          >
             <span class="headline-4 text-white">1</span>
           </div>
           <span class="headline-5 text-orange-500">Basic Information</span>
@@ -23,7 +25,9 @@ import { BriefcaseBusiness } from 'lucide-vue-next'
 
         <!-- Step 2 -->
         <div class="flex items-center gap-4">
-          <div class="w-[66px] h-[50px] bg-gray-200 rounded-sm flex items-center justify-center">
+          <div
+            class="w-[66px] h-[50px] lg:h-[66px] bg-gray-200 rounded-sm flex items-center justify-center"
+          >
             <span class="headline-4 text-gray-600">2</span>
           </div>
           <span class="headline-5 text-gray-600">Payment Method</span>
@@ -31,10 +35,12 @@ import { BriefcaseBusiness } from 'lucide-vue-next'
 
         <!-- Step 3 -->
         <div class="flex items-center gap-4">
-          <div class="w-[66px] h-[50px] bg-gray-200 rounded-sm flex items-center justify-center">
+          <div
+            class="w-[66px] h-[50px] lg:h-[66px] bg-gray-200 rounded-sm flex items-center justify-center"
+          >
             <span class="headline-4 text-gray-600">3</span>
           </div>
-          <span class="headline-5 text-gray-600">Complete</span>
+          <span class="headline-5 text-gray-600">Payment Method</span>
         </div>
       </div>
     </div>
@@ -42,59 +48,68 @@ import { BriefcaseBusiness } from 'lucide-vue-next'
     <!-- ===== MAIN ===== -->
     <div class="flex flex-col lg:flex-row lg:gap-6">
       <!-- ===== LEFT ===== -->
-      <div class="flex flex-col gap-6 grow">
-        <!-- ===== FORM ===== -->
-        <form class="bg-white border border-gray-300 rounded-sm py-6 px-4 flex flex-col gap-6">
-          <h2 class="headline-5 text-gray-600">Basic Information</h2>
+      <!-- ===== FORM ===== -->
+      <form
+        class="grow bg-white border border-gray-300 rounded-sm py-6 px-4 flex flex-col gap-6 lg:p-10 lg:gap-10"
+      >
+        <h2 class="headline-5 text-gray-600 lg:text-gray-800">Basic Information</h2>
 
-          <div class="flex flex-col gap-6">
-            <div class="flex flex-col gap-1">
-              <label class="body-1 text-gray-900">First name</label>
-              <input
-                class="p-3 border border-gray-400 rounded-sm"
-                placeholder="Enter your first name"
-              />
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label class="body-1 text-gray-900">Last name</label>
-              <input
-                class="p-3 border border-gray-400 rounded-sm"
-                placeholder="Enter your last name"
-              />
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label class="body-1 text-gray-900">Email</label>
-              <input class="p-3 border border-gray-400 rounded-sm" placeholder="Enter your email" />
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label class="body-1 text-gray-900">Phone number</label>
-              <input class="p-3 border border-gray-400 rounded-sm" placeholder="Phone number" />
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label class="body-1 text-gray-900">Date of Birth</label>
-              <input class="p-3 border border-gray-400 rounded-sm" placeholder="MM/DD/YYYY" />
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label class="body-1 text-gray-900">Country</label>
-              <input class="p-3 border border-gray-400 rounded-sm" placeholder="Country" />
-            </div>
+        <div class="flex flex-col gap-6 lg:flex-row lg:gap-10">
+          <div class="flex flex-col gap-1 grow">
+            <label class="body-1 text-gray-900">First name</label>
+            <input
+              class="p-3 border border-gray-400 text-black rounded-sm"
+              placeholder="Enter your first name"
+            />
           </div>
-        </form>
+
+          <div class="flex flex-col gap-1 grow">
+            <label class="body-1 text-gray-900">Last name</label>
+            <input
+              class="p-3 border border-gray-400 text-black rounded-sm"
+              placeholder="Enter your last name"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="body-1 text-gray-900">Email</label>
+          <input
+            class="p-3 border border-gray-400 text-black rounded-sm"
+            placeholder="Enter your email"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="body-1 text-gray-900">Phone number</label>
+          <input
+            class="p-3 border border-gray-400 text-black rounded-sm"
+            placeholder="Phone number"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="body-1 text-gray-900">Date of Birth</label>
+          <input
+            class="p-3 border border-gray-400 text-black rounded-sm"
+            placeholder="MM/DD/YYYY"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="body-1 text-gray-900">Country</label>
+          <input class="p-3 border border-gray-400 text-black rounded-sm" placeholder="Country" />
+        </div>
 
         <!-- ===== ACTION (DESKTOP) ===== -->
-        <div class="hidden lg:flex px-4 py-6 items-center justify-between">
+        <div class="hidden lg:flex items-center justify-between">
           <Button variant="ghost">Back</Button>
-          <Button variant="primary" size="xs">Confirm</Button>
+          <Button variant="primary" size="xs">Next</Button>
         </div>
-      </div>
+      </form>
 
       <!-- ===== RIGHT ===== -->
-      <div class="flex flex-col gap-6 lg:max-w-[358px]">
+      <div class="flex flex-col gap-4 lg:max-w-[358px]">
         <!-- ===== SUMMARY ===== -->
         <div class="bg-green-700 text-white">
           <!-- HEADER -->
@@ -162,7 +177,7 @@ import { BriefcaseBusiness } from 'lucide-vue-next'
       <!-- ===== ACTION (MOBILE) ===== -->
       <div class="lg:hidden px-4 py-6 flex items-center justify-between">
         <Button variant="ghost">Back</Button>
-        <Button variant="primary" size="xs">Confirm</Button>
+        <Button variant="primary" size="xs">Next</Button>
       </div>
     </div>
   </div>
