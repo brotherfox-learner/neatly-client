@@ -15,11 +15,14 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@heroicons/vue": "^2.2.0",
+    "@iconoir/vue": "^7.11.0",
     "@supabase/supabase-js": "^2.100.1",
     "@tanstack/vue-query": "^5.95.2",
     "axios": "^1.13.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "iconoir-vue": "^7.11.0",
     "lucide-vue-next": "^1.0.0",
     "pinia": "^3.0.4",
     "reka-ui": "^2.9.2",

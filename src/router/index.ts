@@ -32,6 +32,31 @@ const router = createRouter({
       name: 'register',
       component: () => import('../views/RegisterView.vue'),
     },
+    {
+      path: '/payment-basic',
+      name: 'payment',
+      component: () => import('../views/PaymentBasicInfo.vue'),
+    },
+    {
+      path: '/payment-request',
+      name: 'payment request',
+      component: () => import('../views/PaymentSpecialRequest.vue'),
+    },
+    {
+      path: '/payment-Method',
+      name: 'payment method',
+      component: () => import('../views/PaymentMethod.vue'),
+    },
+    {
+      path: '/payment-success',
+      name: 'payment sucess',
+      component: () => import('../views/PaymentSuccess.vue'),
+    },
+    {
+      path: '/payment-fail',
+      name: 'payment fail',
+      component: () => import('../views/PaymentFail.vue'),
+    },
   ],
 })
 

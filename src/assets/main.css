@@ -1,43 +1,43 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Serif:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap");
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Display:ital,wdth,wght@0,87.5,100..900;1,87.5,100..900&display=swap');
+@import 'tailwindcss';
 @plugin "tailwindcss-animate";
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @theme inline {
-  --color-green-100: #e5ecea;
-  --color-green-200: #d4ddda;
-  --color-green-300: #c0cfca;
-  --color-green-400: #a5bbb3;
-  --color-green-500: #8aa79c;
-  --color-green-600: #6e8e82;
-  --color-green-700: #557165;
-  --color-green-800: #355044;
-  --color-green-900: #12261d;
+  --color-green-100: #f1f5f3;
+  --color-green-200: #e6ebe9;
+  --color-green-300: #d5dfda;
+  --color-green-400: #abc0b4;
+  --color-green-500: #81a08f;
+  --color-green-600: #5d7b6a;
+  --color-green-700: #465c50;
+  --color-green-800: #2f3e35;
+  --color-green-900: #171f1b;
 
-  --color-orange-100: #f6eae6;
-  --color-orange-200: #f2d9cf;
-  --color-orange-300: #e8b8a4;
-  --color-orange-400: #de936f;
-  --color-orange-500: #d96b3a;
-  --color-orange-600: #be4c17;
-  --color-orange-700: #8b3210;
-  --color-orange-800: #5e2008;
-  --color-orange-900: #331002;
+  --color-orange-100: #faede8;
+  --color-orange-200: #f9dace;
+  --color-orange-300: #f3b59c;
+  --color-orange-400: #ed906b;
+  --color-orange-500: #e76b39;
+  --color-orange-600: #c14817;
+  --color-orange-700: #803010;
+  --color-orange-800: #631f04;
+  --color-orange-900: #401808;
 
-  --color-gray-100: #ebebf0;
-  --color-gray-200: #dddee5;
-  --color-gray-300: #ced0db;
-  --color-gray-400: #bec2d1;
-  --color-gray-500: #acb1c5;
-  --color-gray-600: #979db5;
-  --color-gray-700: #767e9d;
-  --color-gray-800: #505a7d;
-  --color-gray-900: #323640;
+  --color-gray-100: #f6f7fc;
+  --color-gray-200: #f1f2f6;
+  --color-gray-300: #e4e6ed;
+  --color-gray-400: #d6d9e4;
+  --color-gray-500: #c8ccdb;
+  --color-gray-600: #9aa1b9;
+  --color-gray-700: #646d89;
+  --color-gray-800: #424c6b;
+  --color-gray-900: #2a2e3f;
 
   --color-white: #ffffff;
   --color-black: #000000;
-  --color-red: #c81219;
-  --color-bg: #f8f8fc;
+  --color-red: #b61515;
+  --color-bg: #f7f7fb;
 
   --color-background: var(--color-bg);
   --color-foreground: var(--color-gray-900);
@@ -55,9 +55,9 @@
   --color-input: var(--color-gray-300);
   --color-ring: var(--color-green-500);
 
-  --font-noto-serif: "Noto Serif", Georgia, "Times New Roman", serif;
-  --font-inter: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-open-sans: "Open Sans", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-noto-serif: 'Noto Serif Display', Georgia, 'Times New Roman', serif;
+  --font-inter: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-open-sans: 'Open Sans', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-heading: var(--font-noto-serif);
   --font-body: var(--font-inter);
 
@@ -138,6 +138,8 @@
   --button-ghost-text-disabled: var(--color-gray-400);
 
   --radius: 0.625rem;
+
+  --shadow-1: 4px 4px 16px 0 rgba(0, 0, 0, 0.08);
 }
 
 @layer base {
@@ -181,7 +183,13 @@
     line-height: var(--text-headline-4-line-height);
     font-weight: var(--text-headline-4-weight);
     letter-spacing: -0.02em;
-    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
+    font-feature-settings:
+      'ss01' on,
+      'ss03' on,
+      'cv03' on,
+      'cv04' on,
+      'cv06' on,
+      'cv09' on;
   }
 
   .headline-5 {
@@ -190,7 +198,13 @@
     line-height: var(--text-headline-5-line-height);
     font-weight: var(--text-headline-5-weight);
     letter-spacing: -0.02em;
-    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
+    font-feature-settings:
+      'ss01' on,
+      'ss03' on,
+      'cv03' on,
+      'cv04' on,
+      'cv06' on,
+      'cv09' on;
   }
 
   .body-1 {
@@ -207,7 +221,13 @@
     line-height: var(--text-body-2-line-height);
     font-weight: var(--text-body-2-weight);
     letter-spacing: -0.02em;
-    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
+    font-feature-settings:
+      'ss01' on,
+      'ss03' on,
+      'cv03' on,
+      'cv04' on,
+      'cv06' on,
+      'cv09' on;
   }
 
   .body-3 {
@@ -216,7 +236,13 @@
     line-height: var(--text-body-3-line-height);
     font-weight: var(--text-body-3-weight);
     letter-spacing: -0.02em;
-    font-feature-settings: "ss01" on, "ss03" on, "cv03" on, "cv04" on, "cv06" on, "cv09" on;
+    font-feature-settings:
+      'ss01' on,
+      'ss03' on,
+      'cv03' on,
+      'cv04' on,
+      'cv06' on,
+      'cv09' on;
   }
 
   .btn {
@@ -232,11 +258,14 @@
     font-size: var(--button-font-size);
     line-height: var(--button-line-height);
     font-weight: var(--button-font-weight);
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
   }
 
   .btn:disabled,
-  .btn[aria-disabled="true"] {
+  .btn[aria-disabled='true'] {
     cursor: not-allowed;
   }
 
@@ -254,7 +283,7 @@
   }
 
   .btn-primary:disabled,
-  .btn-primary[aria-disabled="true"] {
+  .btn-primary[aria-disabled='true'] {
     background-color: var(--button-primary-disabled-bg);
     color: var(--button-primary-disabled-text);
   }
@@ -274,7 +303,7 @@
   }
 
   .btn-secondary:disabled,
-  .btn-secondary[aria-disabled="true"] {
+  .btn-secondary[aria-disabled='true'] {
     border-color: var(--button-secondary-disabled-border);
     color: var(--button-secondary-disabled-text);
   }
@@ -294,7 +323,107 @@
   }
 
   .btn-ghost:disabled,
-  .btn-ghost[aria-disabled="true"] {
+  .btn-ghost[aria-disabled='true'] {
     color: var(--button-ghost-text-disabled);
+  }
+
+  .shadow-1 {
+    box-shadow: var(--shadow-1);
+  }
+
+  @media (min-width: 1024px) {
+    /* ===== HEADLINE ===== */
+    .lg\:headline-1 {
+      font-family: var(--font-noto-serif);
+      font-size: var(--text-headline-1-size);
+      line-height: var(--text-headline-1-line-height);
+      font-weight: var(--text-headline-1-weight);
+      letter-spacing: -0.02em;
+    }
+
+    .lg\:headline-2 {
+      font-family: var(--font-noto-serif);
+      font-size: var(--text-headline-2-size);
+      line-height: var(--text-headline-2-line-height);
+      font-weight: var(--text-headline-2-weight);
+      letter-spacing: -0.02em;
+    }
+
+    .lg\:headline-3 {
+      font-family: var(--font-noto-serif);
+      font-size: var(--text-headline-3-size);
+      line-height: var(--text-headline-3-line-height);
+      font-weight: var(--text-headline-3-weight);
+      letter-spacing: -0.02em;
+    }
+
+    .lg\:headline-4 {
+      font-family: var(--font-inter);
+      font-size: var(--text-headline-4-size);
+      line-height: var(--text-headline-4-line-height);
+      font-weight: var(--text-headline-4-weight);
+      letter-spacing: -0.02em;
+      font-feature-settings:
+        'ss01' on,
+        'ss03' on,
+        'cv03' on,
+        'cv04' on,
+        'cv06' on,
+        'cv09' on;
+    }
+
+    .lg\:headline-5 {
+      font-family: var(--font-inter);
+      font-size: var(--text-headline-5-size);
+      line-height: var(--text-headline-5-line-height);
+      font-weight: var(--text-headline-5-weight);
+      letter-spacing: -0.02em;
+      font-feature-settings:
+        'ss01' on,
+        'ss03' on,
+        'cv03' on,
+        'cv04' on,
+        'cv06' on,
+        'cv09' on;
+    }
+
+    /* ===== BODY ===== */
+    .lg\:body-1 {
+      font-family: var(--font-inter);
+      font-size: var(--text-body-1-size);
+      line-height: var(--text-body-1-line-height);
+      font-weight: var(--text-body-1-weight);
+      letter-spacing: -0.02em;
+    }
+
+    .lg\:body-2 {
+      font-family: var(--font-inter);
+      font-size: var(--text-body-2-size);
+      line-height: var(--text-body-2-line-height);
+      font-weight: var(--text-body-2-weight);
+      letter-spacing: -0.02em;
+      font-feature-settings:
+        'ss01' on,
+        'ss03' on,
+        'cv03' on,
+        'cv04' on,
+        'cv06' on,
+        'cv09' on;
+    }
+
+    .lg\:body-3 {
+      font-family: var(--font-inter);
+      font-size: var(--text-body-3-size);
+      line-height: var(--text-body-3-line-height);
+      font-weight: var(--text-body-3-weight);
+      letter-spacing: -0.02em;
+      font-feature-settings:
+        'ss01' on,
+        'ss03' on,
+        'cv03' on,
+        'cv04' on,
+        'cv06' on,
+        'cv09' on;
+    }
   }
 }
