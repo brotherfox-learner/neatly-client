@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRouter } from "vue-router"
 import { useRoute, RouterLink } from "vue-router"
 import {
   Briefcase,
@@ -10,7 +11,11 @@ import {
   LogOut,
 } from "lucide-vue-next"
 
+import { useAuthStore } from "@/stores/auth"
+
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 
 const navItems = [
   { to: "/admin/customer-booking", label: "Customer Booking", icon: Briefcase },
@@ -23,6 +28,11 @@ const navItems = [
 
 function isActive(path: string) {
   return route.path === path
+}
+
+async function onLogout() {
+  await authStore.signOut()
+  await router.push({ name: "login" })
 }
 </script>
 
@@ -71,15 +81,16 @@ function isActive(path: string) {
     </nav>
 
     <div class="mt-auto w-full border-t border-[#465C50]">
-      <RouterLink
-        to="/login"
+      <button
+        type="button"
         class="flex h-[72px] w-full items-start gap-4 bg-[#2F3E35] px-6 py-6 transition-colors hover:bg-[#343f38]"
+        @click="onLogout"
       >
         <LogOut class="size-6 shrink-0 text-[#81A08F]" :stroke-width="2" aria-hidden="true" />
         <span class="body-1 flex-1 font-medium leading-[150%] tracking-[-0.02em] text-[#D5DFDA]">
           Log Out
         </span>
-      </RouterLink>
+      </button>
     </div>
   </aside>
 </template>

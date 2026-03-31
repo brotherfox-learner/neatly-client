@@ -1,5 +1,48 @@
 <script setup lang="ts">
+import { computed, ref } from "vue"
 import { RouterLink } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
+
+import { isSupabaseConfigured } from "@/lib/supabase"
+import { useAuthStore } from "@/stores/auth"
+
+const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+
+const email = ref("")
+const password = ref("")
+const authError = ref("")
+const isSubmitting = ref(false)
+
+const isAuthReady = computed(() => isSupabaseConfigured())
+
+async function onSubmit() {
+  if (!isAuthReady.value) {
+    authError.value = "Supabase is not configured."
+    return
+  }
+
+  authError.value = ""
+  isSubmitting.value = true
+  try {
+    await authStore.signIn(email.value, password.value)
+    const redirect = typeof route.query.redirect === "string" ? route.query.redirect : null
+    if (redirect) {
+      await router.push(redirect)
+      return
+    }
+    if (authStore.isAdmin) {
+      await router.push({ name: "admin-customer-booking" })
+      return
+    }
+    await router.push({ name: "home" })
+  } catch (error) {
+    authError.value = error instanceof Error ? error.message : "Login failed."
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -25,16 +68,19 @@ import { RouterLink } from "vue-router"
             Log In
           </h1>
 
-          <form class="flex w-full flex-col gap-10" @submit.prevent>
+          <form class="flex w-full flex-col gap-10" @submit.prevent="onSubmit">
             <section class="flex w-full flex-col gap-1">
               <label class="body-1 text-gray-900 flex h-6 w-full items-center" for="login-email">
                 Username or Email
               </label>
               <input
                 id="login-email"
-                type="text"
+                v-model="email"
+                type="email"
+                autocomplete="email"
                 placeholder="Enter your username or email"
                 class="body-1 text-gray-900 placeholder:text-gray-600 border-gray-400 h-12 w-full rounded-[4px] border bg-white px-3 pr-4 outline-none focus:border-gray-500"
+                required
               />
             </section>
 
@@ -44,18 +90,25 @@ import { RouterLink } from "vue-router"
               </label>
               <input
                 id="login-password"
+                v-model="password"
                 type="password"
+                autocomplete="current-password"
                 placeholder="Enter your password"
                 class="body-1 text-gray-900 placeholder:text-gray-600 border-gray-400 h-12 w-full rounded-[4px] border bg-white px-3 pr-4 outline-none focus:border-gray-500"
+                required
               />
             </section>
 
             <section class="flex w-full flex-col gap-4">
+              <p v-if="authError" class="body-2 text-red-700">
+                {{ authError }}
+              </p>
               <button
                 type="submit"
+                :disabled="isSubmitting || !isAuthReady"
                 class="font-open-sans text-[16px] leading-[16px] font-semibold h-12 w-full rounded-[4px] bg-orange-600 px-8 py-4 text-center text-white transition-colors hover:bg-orange-700"
               >
-                Log In
+                {{ isSubmitting ? "Logging in..." : "Log In" }}
               </button>
               <section class="flex h-6 w-full items-start">
                 <p class="body-1 text-gray-700 mr-2 flex items-center">

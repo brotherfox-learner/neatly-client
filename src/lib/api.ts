@@ -36,7 +36,13 @@ api.interceptors.request.use(async (config) => {
 
   const token = sessionResult.data.session?.access_token
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    if (!config.headers) {
+      config.headers = {}
+    }
+    // ถ้ามี Authorization ถูกตั้งมาก่อน (เช่นจาก fetchMe(accessToken)) ให้ใช้ของเดิม
+    if (!('Authorization' in config.headers)) {
+      ;(config.headers as Record<string, string>).Authorization = `Bearer ${token}`
+    }
   }
   return config
 })
