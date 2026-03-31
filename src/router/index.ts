@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -61,7 +62,7 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: () => import('../components/admin/AdminLayout.vue'),
-      meta: { hideNavbar: true },
+      meta: { hideNavbar: true, requiresAuth: true, requiresAdmin: true },
       redirect: { name: 'admin-room-management' },
       children: [
         {
@@ -97,6 +98,31 @@ const router = createRouter({
       ],
     },
   ],
+})
+
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore()
+  if (!authStore.initialized) {
+    await authStore.initializeFromSession()
+  }
+
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
+  const authPages = to.name === 'login' || to.name === 'register'
+
+  if (requiresAuth && !authStore.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (requiresAdmin && !authStore.isAdmin) {
+    return { name: 'home' }
+  }
+
+  if (authPages && authStore.isAuthenticated) {
+    return authStore.isAdmin ? { name: 'admin-customer-booking' } : { name: 'home' }
+  }
+
+  return true
 })
 
 export default router

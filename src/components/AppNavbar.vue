@@ -1,5 +1,16 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router"
+import { useRouter } from "vue-router"
+
+import { useAuthStore } from "@/stores/auth"
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+async function onLogout() {
+  await authStore.signOut()
+  await router.push({ name: "login" })
+}
 </script>
 
 <template>
@@ -55,10 +66,26 @@ import { RouterLink } from "vue-router"
         </nav>
       </section>
 
-      <section class="absolute left-[1191px] top-0 flex h-[100px] w-[89px] items-center p-0">
+      <section class="absolute left-[1110px] top-0 flex h-[100px] w-[180px] items-center justify-end p-0">
         <RouterLink
+          v-if="authStore.isAuthenticated && authStore.isAdmin"
+          to="/admin/customer-booking"
+          class="font-open-sans text-green-800 mr-2 flex h-[100px] items-center justify-center gap-[10px] px-[16px] py-[10px] text-center text-[14px] leading-[16px] font-semibold transition-colors hover:text-green-600"
+        >
+          Admin
+        </RouterLink>
+        <button
+          v-if="authStore.isAuthenticated"
+          type="button"
+          class="font-open-sans text-accent flex h-[100px] items-center justify-center gap-[10px] px-[16px] py-[10px] text-center text-[14px] leading-[16px] font-semibold transition-colors hover:text-orange-600"
+          @click="onLogout"
+        >
+          Log out
+        </button>
+        <RouterLink
+          v-else
           to="/login"
-          class="font-open-sans text-accent flex h-[100px] w-[89px] items-center justify-center gap-[10px] px-[24px] py-[10px] text-center text-[14px] leading-[16px] font-semibold transition-colors hover:text-orange-600"
+          class="font-open-sans text-accent flex h-[100px] items-center justify-center gap-[10px] px-[24px] py-[10px] text-center text-[14px] leading-[16px] font-semibold transition-colors hover:text-orange-600"
         >
           Log in
         </RouterLink>
