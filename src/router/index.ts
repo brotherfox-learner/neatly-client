@@ -32,6 +32,49 @@ const router = createRouter({
       name: 'register',
       component: () => import('../views/RegisterView.vue'),
     },
+    {
+      path: '/admin',
+      component: () => import('../components/admin/AdminLayout.vue'),
+      meta: { hideNavbar: true },
+      redirect: { name: 'admin-customer-booking' },
+      children: [
+        {
+          path: 'customer-booking',
+          name: 'admin-customer-booking',
+          component: () => import('../views/admin/AdminCustomerBookingView.vue'),
+        },
+        {
+          path: 'room-management',
+          name: 'admin-room-management',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Room Management' },
+        },
+        {
+          path: 'hotel-information',
+          name: 'admin-hotel-information',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Hotel Information' },
+        },
+        {
+          path: 'room-property',
+          name: 'admin-room-property',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Room & Property' },
+        },
+        {
+          path: 'analytics',
+          name: 'admin-analytics',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Analytics Dashboard' },
+        },
+        {
+          path: 'chatbot-setup',
+          name: 'admin-chatbot-setup',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Chatbot Setup' },
+        },
+      ],
+    },
   ],
 })
 
