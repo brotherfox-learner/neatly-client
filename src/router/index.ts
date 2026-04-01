@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -65,6 +66,50 @@ const router = createRouter({
       component: () => import('../views/PaymentFail.vue'),
     },
     {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../components/admin/AdminLayout.vue'),
+      meta: { hideNavbar: true, requiresAuth: true, requiresAdmin: true },
+      redirect: { name: 'admin-customer-booking' },
+      children: [
+        {
+          path: 'customer-booking',
+          name: 'admin-customer-booking',
+          component: () => import('../views/admin/AdminCustomerBookingView.vue'),
+        },
+        {
+          path: 'room-management',
+          name: 'admin-room-management',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Room Management' },
+        },
+        {
+          path: 'hotel-information',
+          name: 'admin-hotel-information',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Hotel Information' },
+        },
+        {
+          path: 'room-property',
+          name: 'admin-room-property',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Room & Property' },
+        },
+        {
+          path: 'analytics',
+          name: 'admin-analytics',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Analytics Dashboard' },
+        },
+        {
+          path: 'chatbot-setup',
+          name: 'admin-chatbot-setup',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Chatbot Setup' },
+        },
+      ],
+    },
+    {
       path: '/rooms/:id',
       name: 'room-detail',
       component: () => import('../views/RoomDetailView.vue'),
@@ -75,6 +120,31 @@ const router = createRouter({
       component: () => import('../views/SearchResultView.vue'),
     },
   ],
+})
+
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore()
+  if (!authStore.initialized) {
+    await authStore.initializeFromSession()
+  }
+
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
+  const authPages = to.name === 'login' || to.name === 'register'
+
+  if (requiresAuth && !authStore.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (requiresAdmin && !authStore.isAdmin) {
+    return { name: 'home' }
+  }
+
+  if (authPages && authStore.isAuthenticated) {
+    return authStore.isAdmin ? { name: 'admin-customer-booking' } : { name: 'home' }
+  }
+
+  return true
 })
 
 export default router
