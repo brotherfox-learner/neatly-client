@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
+import { z } from "zod"
 import { RouterLink } from "vue-router"
 import { useRoute, useRouter } from "vue-router"
 
@@ -12,10 +13,20 @@ const authStore = useAuthStore()
 
 const email = ref("")
 const password = ref("")
+const fieldErrors = ref<{ email?: string; password?: string }>({})
 const authError = ref("")
 const isSubmitting = ref(false)
 
 const isAuthReady = computed(() => isSupabaseConfigured())
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Please enter your email.")
+    .email("Please enter a valid email address."),
+  password: z.string().min(6, "Password must be at least 6 characters."),
+})
 
 async function onSubmit() {
   if (!isAuthReady.value) {
@@ -24,6 +35,23 @@ async function onSubmit() {
   }
 
   authError.value = ""
+  fieldErrors.value = {}
+
+  const parsed = loginSchema.safeParse({
+    email: email.value,
+    password: password.value,
+  })
+
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0]
+      if (field === "email" || field === "password") {
+        fieldErrors.value[field] = issue.message
+      }
+    }
+    return
+  }
+
   isSubmitting.value = true
   try {
     await authStore.signIn(email.value, password.value)
@@ -68,7 +96,7 @@ async function onSubmit() {
             Log In
           </h1>
 
-          <form class="flex w-full flex-col gap-10" @submit.prevent="onSubmit">
+          <form class="flex w-full flex-col gap-10" novalidate @submit.prevent="onSubmit">
             <section class="flex w-full flex-col gap-1">
               <label class="body-1 text-gray-900 flex h-6 w-full items-center" for="login-email">
                 Username or Email
@@ -80,8 +108,10 @@ async function onSubmit() {
                 autocomplete="email"
                 placeholder="Enter your username or email"
                 class="body-1 text-gray-900 placeholder:text-gray-600 border-gray-400 h-12 w-full rounded-[4px] border bg-white px-3 pr-4 outline-none focus:border-gray-500"
-                required
               />
+              <p v-if="fieldErrors.email" class="body-2 text-red-700">
+                {{ fieldErrors.email }}
+              </p>
             </section>
 
             <section class="flex w-full flex-col gap-1">
@@ -95,8 +125,10 @@ async function onSubmit() {
                 autocomplete="current-password"
                 placeholder="Enter your password"
                 class="body-1 text-gray-900 placeholder:text-gray-600 border-gray-400 h-12 w-full rounded-[4px] border bg-white px-3 pr-4 outline-none focus:border-gray-500"
-                required
               />
+              <p v-if="fieldErrors.password" class="body-2 text-red-700">
+                {{ fieldErrors.password }}
+              </p>
             </section>
 
             <section class="flex w-full flex-col gap-4">
