@@ -3,9 +3,7 @@ import { Button } from '@/components/ui/button'
 </script>
 
 <template>
-  <div
-    class="max-w-[738px] mx-auto bg-background flex flex-col min-h-screen lg:py-[80px]"
-  >
+  <div class="max-w-[738px] mx-auto bg-background flex flex-col min-h-screen lg:py-[80px]">
     <!-- ===== TOP (SUCCESS) ===== -->
     <div class="bg-green-800 text-white px-6 py-10 text-center flex flex-col gap-4">
       <h1 class="headline-3">Thank you for booking</h1>
@@ -68,7 +66,9 @@ import { Button } from '@/components/ui/button'
         </div>
 
         <!-- TOTAL -->
-        <div class="border-t border-green-600 mt-4 pt-4 flex items-center justify-between lg:pt-[24px]">
+        <div
+          class="border-t border-green-600 mt-4 pt-4 flex items-center justify-between lg:pt-[24px]"
+        >
           <span class="body-1 text-green-300">Total</span>
           <span class="headline-5">THB 2,300.00</span>
         </div>
@@ -76,14 +76,14 @@ import { Button } from '@/components/ui/button'
     </div>
 
     <!-- ===== ACTION (MOBILE) ===== -->
-    <div class="lg:hidden px-4 py-6 flex flex-col items-center justify-between">
-      <Button variant="primary" size="xs">Back to Home</Button>
-      <Button variant="ghost">Check Booking Detail</Button>
+    <div class="lg:hidden px-4 py-6 flex flex-col items-center justify-between gap-[24px]">
+      <Button variant="primary" class="w-full">Back to Home</Button>
+      <Button variant="ghost" size="ghost">Check Booking Detail</Button>
     </div>
     <!-- ===== ACTION (DESKTOP) ===== -->
-    <div class="hidden lg:flex px-4 py-6 items-center justify-between lg:mx-auto lg:p-0 lg:mt-[60px]">
-      <Button variant="ghost">Check Booking Detail</Button>
-      <Button variant="primary" size="xs">Back to Home</Button>
+    <div class="hidden lg:flex items-center gap-[40px] mx-auto p-0 mt-[60px]">
+      <Button variant="ghost" size="ghost">Check Booking Detail</Button>
+      <Button variant="primary">Back to Home</Button>
     </div>
   </div>
 </template>

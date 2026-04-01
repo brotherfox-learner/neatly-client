@@ -38,7 +38,7 @@ const paymentMethod = ref<PaymentMethod>('card')
           >
             <span class="headline-4 text-orange-500">2</span>
           </div>
-          <span class="headline-5 text-gray-900">Payment Method</span>
+          <span class="headline-5 text-gray-900">Special Request</span>
         </div>
 
         <!-- Step 3 -->
@@ -64,11 +64,11 @@ const paymentMethod = ref<PaymentMethod>('card')
         <div class="flex gap-2 lg:gap-4">
           <!-- CARD -->
           <button
-            class="flex-1 py-[14px] rounded-sm border shadow-1 flex items-center justify-center gap-2 cursor-pointer lg:py-[24px] lg:headline-5"
+            class="flex-1 py-[14px] rounded-sm border shadow-1 flex items-center justify-center gap-2 cursor-pointer lg:py-[24px] lg:headline-5 transition-colors"
             :class="
               paymentMethod === 'card'
                 ? 'border-orange-500 text-orange-500'
-                : 'border-gray-300 text-gray-500'
+                : 'border-gray-300 text-gray-600 hover:border-orange-500'
             "
             @click="paymentMethod = 'card'"
           >
@@ -78,11 +78,11 @@ const paymentMethod = ref<PaymentMethod>('card')
 
           <!-- CASH -->
           <button
-            class="flex-1 py-[14px] rounded-sm border shadow-1 flex items-center justify-center gap-2 cursor-pointer lg:py-[24px] lg:headline-5"
+            class="flex-1 py-[14px] rounded-sm border shadow-1 flex items-center justify-center gap-2 cursor-pointer lg:py-[24px] lg:headline-5 transition-colors"
             :class="
               paymentMethod === 'cash'
                 ? 'border-orange-500 text-orange-500'
-                : 'border-gray-300 text-gray-500'
+                : 'border-gray-300 text-gray-600 hover:border-orange-500'
             "
             @click="paymentMethod = 'cash'"
           >
@@ -162,8 +162,8 @@ const paymentMethod = ref<PaymentMethod>('card')
 
         <!-- ===== ACTION (DESKTOP) ===== -->
         <div class="hidden lg:flex items-center justify-between">
-          <Button variant="ghost">Back</Button>
-          <Button variant="primary" size="xs">Confirm Booking</Button>
+          <Button variant="ghost" size="ghost">Back</Button>
+          <Button variant="primary">Confirm Booking</Button>
         </div>
       </div>
 
@@ -247,8 +247,8 @@ const paymentMethod = ref<PaymentMethod>('card')
       </div>
       <!-- ACTION -->
       <div class="lg:hidden px-4 py-6 flex items-center justify-between">
-        <Button variant="ghost">Back</Button>
-        <Button variant="primary" size="xs">Next</Button>
+        <Button variant="ghost" size="ghost">Back</Button>
+        <Button variant="primary">Next</Button>
       </div>
     </div>
   </div>

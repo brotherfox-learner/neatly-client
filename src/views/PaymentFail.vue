@@ -24,16 +24,14 @@ import { CircleAlert } from 'lucide-vue-next'
     </div>
 
     <!-- ===== ACTION (MOBILE) ===== -->
-    <div class="lg:hidden px-4 py-6 flex flex-col items-center justify-between">
-      <Button variant="primary" size="xs">Back to Payment details</Button>
-      <Button variant="ghost">Retry payment</Button>
+    <div class="lg:hidden px-4 py-6 flex flex-col items-center justify-between gap-[24px]">
+      <Button variant="primary" class="w-full">Back to Payment details</Button>
+      <Button variant="ghost" size="ghost">Retry payment</Button>
     </div>
     <!-- ===== ACTION (DESKTOP) ===== -->
-    <div
-      class="hidden lg:flex px-4 py-6 items-center justify-between lg:mx-auto lg:p-0 lg:mt-[60px]"
-    >
-      <Button variant="ghost">Retry payment</Button>
-      <Button variant="primary" size="xs">Back to Payment details</Button>
+    <div class="hidden lg:flex items-center gap-[40px] mx-auto p-0 mt-[60px]">
+      <Button variant="ghost" size="ghost">Retry payment</Button>
+      <Button variant="primary">Back to Payment details</Button>
     </div>
   </div>
 </template>

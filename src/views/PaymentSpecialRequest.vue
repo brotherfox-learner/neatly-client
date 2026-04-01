@@ -2,14 +2,15 @@
 import { ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { BriefcaseBusiness } from 'lucide-vue-next'
+import { Check } from 'lucide-vue-next'
 
 const standardRequests = ref<string[]>([])
 const specialRequests = ref<string[]>([])
 
-const toggle = (list: any, value: string) => {
-  const index = list.value.indexOf(value)
-  if (index > -1) list.value.splice(index, 1)
-  else list.value.push(value)
+const toggle = (list: string[], value: string) => {
+  const index = list.indexOf(value)
+  if (index > -1) list.splice(index, 1)
+  else list.push(value)
 }
 </script>
 
@@ -40,7 +41,7 @@ const toggle = (list: any, value: string) => {
           >
             <span class="headline-4 text-white">2</span>
           </div>
-          <span class="headline-5 text-orange-500">Payment Method</span>
+          <span class="headline-5 text-orange-500">Special Request</span>
         </div>
 
         <!-- Step 3 -->
@@ -68,100 +69,160 @@ const toggle = (list: any, value: string) => {
             <h2 class="headline-5 lg:text-gray-800">Standard Request</h2>
             <p class="body-2">These requests are not confirmed (Depend on the available room)</p>
           </div>
+
           <div class="flex flex-col gap-4 lg:gap-6">
-            <label class="flex items-center gap-3 cursor-pointer">
+            <!-- ITEM -->
+            <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                class="hidden"
+                class="sr-only"
                 @change="toggle(standardRequests, 'early-checkin')"
               />
+
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
                 :class="
-                  standardRequests.includes('early-checkin') && 'bg-orange-500 border-orange-300'
+                  standardRequests.includes('early-checkin')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
                 "
               >
-                <span v-if="standardRequests.includes('early-checkin')" class="text-white text-sm"
-                  >✓</span
-                >
+                <span v-if="standardRequests.includes('early-checkin')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">Early check-in</span>
+
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  standardRequests.includes('early-checkin')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                Early check-in
+              </span>
             </label>
 
-            <label class="flex items-center gap-3 cursor-pointer">
+            <!-- COPY PATTERN -->
+            <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                class="hidden"
+                class="sr-only"
                 @change="toggle(standardRequests, 'late-checkout')"
               />
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
                 :class="
-                  standardRequests.includes('late-checkout') && 'bg-orange-500 border-orange-300'
+                  standardRequests.includes('late-checkout')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
                 "
               >
-                <span v-if="standardRequests.includes('late-checkout')" class="text-white text-sm"
-                  >✓</span
-                >
+                <span v-if="standardRequests.includes('late-checkout')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">Late check-out</span>
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  standardRequests.includes('late-checkout')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                Late check-out
+              </span>
             </label>
 
-            <label class="flex items-center gap-3 cursor-pointer">
+            <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                class="hidden"
+                class="sr-only"
                 @change="toggle(standardRequests, 'non-smoking')"
               />
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
                 :class="
-                  standardRequests.includes('non-smoking') && 'bg-orange-500 border-orange-300'
+                  standardRequests.includes('non-smoking')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
                 "
               >
-                <span v-if="standardRequests.includes('non-smoking')" class="text-white text-sm"
-                  >✓</span
-                >
+                <span v-if="standardRequests.includes('non-smoking')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">Non-smoking room</span>
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  standardRequests.includes('non-smoking')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                Non-smoking room
+              </span>
             </label>
 
-            <label class="flex items-center gap-3 cursor-pointer">
+            <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                class="hidden"
+                class="sr-only"
                 @change="toggle(standardRequests, 'high-floor')"
               />
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
                 :class="
-                  standardRequests.includes('high-floor') && 'bg-orange-500 border-orange-300'
+                  standardRequests.includes('high-floor')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
                 "
               >
-                <span v-if="standardRequests.includes('high-floor')" class="text-white text-sm"
-                  >✓</span
-                >
+                <span v-if="standardRequests.includes('high-floor')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">A room on the high floor</span>
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  standardRequests.includes('high-floor')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                A room on the high floor
+              </span>
             </label>
 
-            <label class="flex items-center gap-3 cursor-pointer">
+            <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                class="hidden"
+                class="sr-only"
                 @change="toggle(standardRequests, 'quiet-room')"
               />
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
                 :class="
-                  standardRequests.includes('quiet-room') && 'bg-orange-500 border-orange-300'
+                  standardRequests.includes('quiet-room')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
                 "
               >
-                <span v-if="standardRequests.includes('quiet-room')" class="text-white text-sm"
-                  >✓</span
-                >
+                <span v-if="standardRequests.includes('quiet-room')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">A quiet room</span>
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  standardRequests.includes('quiet-room')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                A quiet room
+              </span>
             </label>
           </div>
         </div>
@@ -174,98 +235,189 @@ const toggle = (list: any, value: string) => {
           </div>
 
           <div class="flex flex-col gap-4 lg:gap-6">
-            <label class="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" class="hidden" @change="toggle(specialRequests, 'cot')" />
+            <!-- ITEM -->
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="sr-only" @change="toggle(specialRequests, 'cot')" />
+
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                :class="specialRequests.includes('cot') && 'bg-orange-500 border-orange-300'"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
+                :class="
+                  specialRequests.includes('cot')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
+                "
               >
-                <span v-if="specialRequests.includes('cot')" class="text-white text-sm">✓</span>
+                <span v-if="specialRequests.includes('cot')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">Baby cot (+THB 400)</span>
+
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  specialRequests.includes('cot')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                Baby cot (+THB 400)
+              </span>
             </label>
 
-            <label class="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" class="hidden" @change="toggle(specialRequests, 'airport')" />
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" class="sr-only" @change="toggle(specialRequests, 'airport')" />
+
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                :class="specialRequests.includes('airport') && 'bg-orange-500 border-orange-300'"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
+                :class="
+                  specialRequests.includes('airport')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
+                "
               >
-                <span v-if="specialRequests.includes('airport')" class="text-white text-sm">✓</span>
+                <span v-if="specialRequests.includes('airport')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">Airport transfer (+THB 200)</span>
+
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  specialRequests.includes('airport')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                Airport transfer (+THB 200)
+              </span>
             </label>
 
-            <label class="flex items-center gap-3 cursor-pointer">
+            <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                class="hidden"
+                class="sr-only"
                 @change="toggle(specialRequests, 'extra-bed')"
               />
+
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                :class="specialRequests.includes('extra-bed') && 'bg-orange-500 border-orange-300'"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
+                :class="
+                  specialRequests.includes('extra-bed')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
+                "
               >
-                <span v-if="specialRequests.includes('extra-bed')" class="text-white text-sm"
-                  >✓</span
-                >
+                <span v-if="specialRequests.includes('extra-bed')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">Extra bed (+THB 500)</span>
+
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  specialRequests.includes('extra-bed')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                Extra bed (+THB 500)
+              </span>
             </label>
 
-            <label class="flex items-center gap-3 cursor-pointer">
+            <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                class="hidden"
+                class="sr-only"
                 @change="toggle(specialRequests, 'extra-pillow')"
               />
+
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
                 :class="
-                  specialRequests.includes('extra-pillow') && 'bg-orange-500 border-orange-300'
+                  specialRequests.includes('extra-pillow')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
                 "
               >
-                <span v-if="specialRequests.includes('extra-pillow')" class="text-white text-sm"
-                  >✓</span
-                >
+                <span v-if="specialRequests.includes('extra-pillow')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">Extra pillows (+THB 100)</span>
+
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  specialRequests.includes('extra-pillow')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                Extra pillows (+THB 100)
+              </span>
             </label>
 
-            <label class="flex items-center gap-3 cursor-pointer">
+            <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                class="hidden"
+                class="sr-only"
                 @change="toggle(specialRequests, 'phone-charger')"
               />
+
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
                 :class="
-                  specialRequests.includes('phone-charger') && 'bg-orange-500 border-orange-300'
+                  specialRequests.includes('phone-charger')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
                 "
               >
-                <span v-if="specialRequests.includes('phone-charger')" class="text-white text-sm"
-                  >✓</span
-                >
+                <span v-if="specialRequests.includes('phone-charger')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">Phone chargers and adapters (+THB 100)</span>
+
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  specialRequests.includes('phone-charger')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                Phone chargers and adapters (+THB 100)
+              </span>
             </label>
 
-            <label class="flex items-center gap-3 cursor-pointer">
+            <label class="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
-                class="hidden"
+                class="sr-only"
                 @change="toggle(specialRequests, 'breakfast')"
               />
+
               <div
-                class="w-6 h-6 border rounded-sm border-gray-400 flex items-center justify-center"
-                :class="specialRequests.includes('breakfast') && 'bg-orange-500 border-orange-300'"
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
+                :class="
+                  specialRequests.includes('breakfast')
+                    ? 'bg-orange-500 border-orange-300'
+                    : 'bg-white border-gray-400 group-hover:border-orange-500'
+                "
               >
-                <span v-if="specialRequests.includes('breakfast')" class="text-white text-sm"
-                  >✓</span
-                >
+                <span v-if="specialRequests.includes('breakfast')" class="text-white text-sm">
+                  <Check :size="16" />
+                </span>
               </div>
-              <span class="body-1 text-gray-700">Breakfast (+150)</span>
+
+              <span
+                class="body-1 transition-colors"
+                :class="
+                  specialRequests.includes('breakfast')
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-700 group-hover:text-orange-500'
+                "
+              >
+                Breakfast (+150)
+              </span>
             </label>
           </div>
         </div>
@@ -281,8 +433,8 @@ const toggle = (list: any, value: string) => {
 
         <!-- ===== ACTION (DESKTOP) ===== -->
         <div class="hidden lg:flex items-center justify-between">
-          <Button variant="ghost">Back</Button>
-          <Button variant="primary" size="xs">Next</Button>
+          <Button variant="ghost" size="ghost">Back</Button>
+          <Button variant="primary">Next</Button>
         </div>
       </div>
 
@@ -366,8 +518,8 @@ const toggle = (list: any, value: string) => {
       </div>
       <!-- ACTION -->
       <div class="lg:hidden px-4 py-6 flex items-center justify-between">
-        <Button variant="ghost">Back</Button>
-        <Button variant="primary" size="xs">Next</Button>
+        <Button variant="ghost" size="ghost">Back</Button>
+        <Button variant="primary">Next</Button>
       </div>
     </div>
   </div>

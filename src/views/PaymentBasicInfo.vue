@@ -30,7 +30,7 @@ import { BriefcaseBusiness } from 'lucide-vue-next'
           >
             <span class="headline-4 text-gray-600">2</span>
           </div>
-          <span class="headline-5 text-gray-600">Payment Method</span>
+          <span class="headline-5 text-gray-600">Special Request</span>
         </div>
 
         <!-- Step 3 -->
@@ -103,8 +103,8 @@ import { BriefcaseBusiness } from 'lucide-vue-next'
 
         <!-- ===== ACTION (DESKTOP) ===== -->
         <div class="hidden lg:flex items-center justify-between">
-          <Button variant="ghost">Back</Button>
-          <Button variant="primary" size="xs">Next</Button>
+          <Button variant="ghost" size="ghost">Back</Button>
+          <Button variant="primary">Next</Button>
         </div>
       </form>
 
@@ -176,8 +176,8 @@ import { BriefcaseBusiness } from 'lucide-vue-next'
 
       <!-- ===== ACTION (MOBILE) ===== -->
       <div class="lg:hidden px-4 py-6 flex items-center justify-between">
-        <Button variant="ghost">Back</Button>
-        <Button variant="primary" size="xs">Next</Button>
+        <Button variant="ghost" size="ghost">Back</Button>
+        <Button variant="primary">Next</Button>
       </div>
     </div>
   </div>

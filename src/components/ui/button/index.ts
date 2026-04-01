@@ -1,32 +1,50 @@
-import type { VariantProps } from "class-variance-authority"
-import { cva } from "class-variance-authority"
+import type { VariantProps } from 'class-variance-authority'
+import { cva } from 'class-variance-authority'
 
-export { default as Button } from "./Button.vue"
+export { default as Button } from './Button.vue'
 
 export const buttonVariants = cva(
-  "btn whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  [
+    'inline-flex items-center justify-center gap-2',
+    'rounded-sm transition-colors whitespace-nowrap',
+    'font-semibold',
+    'disabled:pointer-events-none',
+    '[&_svg]:size-4 [&_svg]:shrink-0',
+  ].join(' '),
   {
     variants: {
       variant: {
-        default: "btn-primary",
-        primary: "btn-primary",
-        secondary: "btn-secondary",
-        outline: "btn-secondary",
-        ghost: "btn-ghost",
+        primary: `
+        bg-orange-600 text-white
+        hover:bg-orange-500
+        active:bg-orange-700
+        disabled:bg-gray-300 disabled:text-gray-600
+      `,
+
+        secondary: `
+        bg-white border border-orange-500 text-orange-500
+        hover:border-orange-400 hover:text-orange-400
+        active:border-orange-600 active:text-orange-600
+        disabled:border-gray-400 disabled:text-gray-400
+      `,
+
+        ghost: `
+        text-orange-500
+        hover:text-orange-400
+        active:text-orange-600
+        disabled:text-gray-500
+      `,
       },
+
       size: {
-        default: "",
-        xs: "min-h-10 px-4 text-xl",
-        sm: "min-h-12 px-6 text-2xl",
-        lg: "min-h-20 px-10 text-4xl",
-        icon: "size-12 p-0",
-        "icon-sm": "size-10 p-0",
-        "icon-lg": "size-14 p-0",
+        default: 'px-[32px] py-[16px]',
+        ghost: 'px-[8px] py-[4px]',
       },
     },
+
     defaultVariants: {
-      variant: "primary",
-      size: "default",
+      variant: 'primary',
+      size: 'default',
     },
   },
 )
