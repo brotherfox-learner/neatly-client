@@ -63,8 +63,13 @@ const router = createRouter({
       name: 'admin',
       component: () => import('../components/admin/AdminLayout.vue'),
       meta: { hideNavbar: true, requiresAuth: true, requiresAdmin: true },
-      redirect: { name: 'admin-room-management' },
+      redirect: { name: 'admin-customer-booking' },
       children: [
+        {
+          path: 'customer-booking',
+          name: 'admin-customer-booking',
+          component: () => import('../views/admin/AdminCustomerBookingView.vue'),
+        },
         {
           path: 'room-management',
           name: 'admin-room-management',
