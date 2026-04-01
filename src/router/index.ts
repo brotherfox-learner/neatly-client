@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import HomeView from '../views/HomeView.vue'
 
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to, _from, savedPosition) {
@@ -57,7 +58,7 @@ const router = createRouter({
       component: () => import('../views/PaymentSpecialRequest.vue'),
     },
     {
-      path: '/payment-Method',
+      path: '/payment-method',
       name: 'payment method',
       component: () => import('../views/PaymentMethod.vue'),
     },
@@ -70,6 +71,11 @@ const router = createRouter({
       path: '/payment-fail',
       name: 'payment fail',
       component: () => import('../views/PaymentFail.vue'),
+    },
+    {
+      path: '/analytics-dashboard',
+      name: 'analytics dashboard',
+      component: () => import('../views/AnalyticsDashboard.vue'),
     },
     {
       path: '/admin',
