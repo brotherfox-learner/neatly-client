@@ -63,6 +63,8 @@ const router = createRouter({
       path: '/payment-fail',
       name: 'payment fail',
       component: () => import('../views/PaymentFail.vue'),
+    },
+    {
       path: '/rooms/:id',
       name: 'room-detail',
       component: () => import('../views/RoomDetailView.vue'),
