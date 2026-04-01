@@ -245,6 +245,14 @@
       'cv09' on;
   }
 
+  .font-noto-serif {
+    font-family: "Noto Serif", Georgia, "Times New Roman", serif;
+  }
+
+  .font-ibm-plex-thai {
+    font-family: var(--font-ibm-plex-thai);
+  }
+
   .btn {
     display: inline-flex;
     align-items: center;
@@ -426,5 +434,72 @@
         'cv06' on,
         'cv09' on;
     }
+  }
+  /* Literal stack: matches Google Fonts import; avoids var(--font-noto-serif) not resolving inside layers */
+  .landing-hero-title {
+    font-family: "Noto Serif", Georgia, "Times New Roman", serif;
+    font-size: var(--text-headline-3-size);
+    line-height: var(--text-headline-3-line-height);
+    font-weight: var(--text-headline-3-weight);
+    letter-spacing: -0.02em;
+  }
+
+  @media (min-width: 768px) {
+    .landing-hero-title {
+      font-size: var(--text-headline-1-size);
+      line-height: var(--text-headline-1-line-height);
+      font-weight: var(--text-headline-1-weight);
+    }
+  }
+
+  .landing-serif-h2 {
+    font-family: var(--font-noto-serif);
+    font-size: var(--text-headline-3-size);
+    line-height: var(--text-headline-3-line-height);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  @media (min-width: 768px) {
+    .landing-serif-h2 {
+      font-size: var(--text-headline-2-size);
+      line-height: var(--text-headline-2-line-height);
+    }
+  }
+
+  .landing-about-title {
+    font-family: var(--font-noto-serif);
+    font-size: var(--text-headline-3-size);
+    line-height: var(--text-headline-3-line-height);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: #2f3e35;
+  }
+
+  @media (min-width: 768px) {
+    .landing-about-title {
+      font-size: 4.25rem;
+      line-height: 1.25;
+    }
+  }
+
+  .landing-room-title {
+    font-family: var(--font-noto-serif);
+    font-size: 2rem;
+    line-height: 1.25;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--color-white);
+  }
+
+  @media (min-width: 768px) {
+    .landing-room-title {
+      font-size: var(--text-headline-3-size);
+      line-height: var(--text-headline-3-line-height);
+    }
+  }
+
+  .landing-arrow-orange {
+    filter: invert(52%) sepia(66%) saturate(2145%) hue-rotate(339deg) brightness(97%) contrast(89%);
   }
 }
