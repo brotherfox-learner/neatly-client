@@ -119,6 +119,21 @@ const router = createRouter({
       name: 'search',
       component: () => import('../views/SearchResultView.vue'),
     },
+    {
+      path: '/booking-history',
+      name: 'booking-history',
+      component: () => import('../views/BookingHistoryView.vue'),
+    },
+    {
+      path: '/booking-change-date/:id',
+      name: 'booking-change-date',
+      component: () => import('../views/BookingChangeDateView.vue'),
+    },
+    {
+      path: '/cancel-refund/:id',
+      name: 'cancel-refund',
+      component: () => import('../views/CancelRefundView.vue'),
+    },
   ],
 })
 
