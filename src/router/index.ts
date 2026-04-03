@@ -54,28 +54,33 @@ const router = createRouter({
     },
     {
       path: '/payment-request',
-      name: 'payment request',
+      name: 'payment-request',
       component: () => import('../views/PaymentSpecialRequest.vue'),
     },
     {
       path: '/payment-method',
-      name: 'payment method',
+      name: 'payment-method',
       component: () => import('../views/PaymentMethod.vue'),
     },
     {
       path: '/payment-success',
-      name: 'payment sucess',
+      name: 'payment-sucess',
       component: () => import('../views/PaymentSuccess.vue'),
     },
     {
       path: '/payment-fail',
-      name: 'payment fail',
+      name: 'payment-fail',
       component: () => import('../views/PaymentFail.vue'),
     },
     {
       path: '/analytics-dashboard',
       name: 'analytics dashboard',
       component: () => import('../views/AnalyticsDashboard.vue'),
+    },
+    {
+      path: '/admin-promo',
+      name: 'admin-promo-code',
+      component: () => import('../views/AdminPromoCode.vue'),
     },
     {
       path: '/admin',
