@@ -1,8 +1,16 @@
+import axios from "axios"
 import { defineStore } from "pinia"
 
 import { api } from "@/lib/api"
 import { getSupabase } from "@/lib/supabase"
 import { userResponseSchema, type UserResponse } from "@/schemas/userResponse"
+
+/** True when Spring `/api/v1/me` rejected the JWT (revoked user, invalid auth). */
+export function isMeUnauthorized(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false
+  const status = error.response?.status
+  return status === 401 || status === 403
+}
 
 type RegisterPayload = {
   email: string
@@ -38,9 +46,12 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         await this.fetchMe(data.session.access_token)
-      } catch {
-        // Existing/stale browser session should not crash app bootstrap.
-        await supabase.auth.signOut()
+      } catch (e) {
+        // Only drop Supabase session when the backend explicitly rejects the token.
+        // Network blips / 5xx / timeouts should not sign the user out of Supabase.
+        if (isMeUnauthorized(e)) {
+          await supabase.auth.signOut()
+        }
         this.user = null
       }
       this.initialized = true

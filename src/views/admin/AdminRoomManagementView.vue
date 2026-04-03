@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Plus, Search } from "lucide-vue-next"
+import { ChevronDown, Plus, Search } from "lucide-vue-next"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 
 type StatusKey =
@@ -116,30 +116,33 @@ const statusByKey = computed(() => {
   for (const opt of STATUS_OPTIONS) map[opt.key] = opt
   return map
 })
+const roomTypeOptions = ["Superior Garden View", "Deluxe", "Superior", "Premier Sea View", "Supreme", "Suite"]
+const bedTypeOptions = ["Single Bed", "Double Bed"]
+const mockStatusCycle: StatusKey[] = [
+  "Occupied",
+  "Assign Clean",
+  "Vacant Clean Pick Up",
+  "Assign Dirty",
+  "Vacant Clean",
+  "Occupied Clean",
+  "Vacant Clean Inspected",
+  "Occupied Dirty",
+  "Out of Service",
+  "Out of Inventory",
+]
 
 const rows = ref<RoomRow[]>(
   Array.from({ length: 10 }, (_, i) => {
     const roomNo = String(i + 1).padStart(4, "0")
-    const roomTypeOptions = ["Superior Garden View", "Deluxe", "Superior", "Premier Sea View", "Supreme", "Suite"]
-    const bedTypeOptions = ["Single Bed", "Double Bed"]
-    const statusCycle: StatusKey[] = [
-      "Occupied",
-      "Assign Clean",
-      "Vacant Clean Pick Up",
-      "Assign Dirty",
-      "Vacant Clean",
-      "Occupied Clean",
-      "Vacant Clean Inspected",
-      "Occupied Dirty",
-      "Out of Service",
-      "Out of Inventory",
-    ]
+    const roomType = roomTypeOptions[i % roomTypeOptions.length] ?? roomTypeOptions[0]!
+    const bedType = bedTypeOptions[i % bedTypeOptions.length] ?? bedTypeOptions[0]!
+    const status = mockStatusCycle[i % mockStatusCycle.length] ?? mockStatusCycle[0]!
 
     return {
       roomNo,
-      roomType: roomTypeOptions[i % roomTypeOptions.length],
-      bedType: bedTypeOptions[i % bedTypeOptions.length],
-      status: statusCycle[i % statusCycle.length],
+      roomType,
+      bedType,
+      status,
     }
   }),
 )
