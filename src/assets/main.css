@@ -246,7 +246,7 @@
   }
 
   .font-noto-serif {
-    font-family: "Noto Serif", Georgia, "Times New Roman", serif;
+    font-family: 'Noto Serif', Georgia, 'Times New Roman', serif;
   }
 
   .font-ibm-plex-thai {
@@ -437,7 +437,7 @@
   }
   /* Literal stack: matches Google Fonts import; avoids var(--font-noto-serif) not resolving inside layers */
   .landing-hero-title {
-    font-family: "Noto Serif", Georgia, "Times New Roman", serif;
+    font-family: 'Noto Serif', Georgia, 'Times New Roman', serif;
     font-size: var(--text-headline-3-size);
     line-height: var(--text-headline-3-line-height);
     font-weight: var(--text-headline-3-weight);
@@ -569,4 +569,32 @@
       animation: none;
     }
   }
+}
+
+.promo-loader {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  background: #c14817; /* orange-600 ของ project */
+  transform: rotateX(65deg) rotate(45deg);
+  color: #fff;
+  animation: layers1 1s linear infinite alternate;
+}
+
+.promo-loader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  animation: layerTr 1s linear infinite alternate;
+}
+
+@keyframes layers1 {
+  0% { box-shadow: 0px 0px 0 0px; }
+  90%, 100% { box-shadow: 20px 20px 0 -4px; }
+}
+
+@keyframes layerTr {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-25px, -25px) scale(1); }
 }

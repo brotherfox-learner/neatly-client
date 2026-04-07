@@ -7,6 +7,7 @@ import {
   Building2,
   Package,
   PieChart,
+  TicketPercent,
   MessageCircle,
   LogOut,
 } from "lucide-vue-next"
@@ -22,6 +23,7 @@ const navItems = [
   { to: "/admin/room-management", label: "Room Management", icon: ClipboardCheck },
   { to: "/admin/hotel-information", label: "Hotel Information", icon: Building2 },
   { to: "/admin/room-property", label: "Room & Property", icon: Package },
+  { to: "/admin/promocode", label: "Promo code", icon: TicketPercent },
   { to: "/admin/analytics", label: "Analytics Dashboard", icon: PieChart },
   { to: "/admin/chatbot-setup", label: "Chatbot Setup", icon: MessageCircle },
 ] as const

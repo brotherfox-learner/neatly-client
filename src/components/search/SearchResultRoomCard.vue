@@ -1,12 +1,29 @@
 <script setup lang="ts">
 import { Images } from "lucide-vue-next"
-import { RouterLink } from "vue-router"
+import { RouterLink, useRouter } from "vue-router"
 import { formatPrice } from "@/data/rooms"
 import type { SearchResultRoom } from "@/lib/roomCatalog"
 
 defineProps<{
   room: SearchResultRoom
 }>()
+
+const router = useRouter()
+const bookingStore = useBookingStore()
+
+const handleBookNow = () => {
+  bookingStore.setRoom({
+    roomTypeId: props.room.id,
+    roomTypeName: props.room.name,
+    pricePerNight: props.room.currentPrice,
+    roomImage: props.room.coverImage,
+    checkIn: props.checkIn ?? '',
+    checkOut: props.checkOut ?? '',
+    guests: props.guests ?? props.room.guests,
+    roomCount: props.roomCount ?? 1,
+  })
+  router.push('/payment-basic')
+}
 </script>
 
 <template>
@@ -96,12 +113,12 @@ defineProps<{
           >
             Room Detail
           </RouterLink>
-          <RouterLink
-            :to="{ name: 'room-detail', params: { id: room.id } }"
+          <button
             class="font-open-sans inline-flex h-12 min-w-[140px] items-center justify-center rounded-[4px] bg-[#C14817] px-8 text-center text-[15px] font-semibold text-white transition-colors hover:bg-[#a83e14] md:px-10 md:text-[16px]"
+            @click="handleBookNow"
           >
             Book Now
-          </RouterLink>
+          </button>
         </div>
       </div>
     </div>
