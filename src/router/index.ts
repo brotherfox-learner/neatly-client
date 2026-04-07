@@ -2,13 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import HomeView from '../views/HomeView.vue'
 
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to, _from, savedPosition) {
     if (savedPosition) return savedPosition
     if (to.hash) {
-      return { el: to.hash, behavior: "smooth" }
+      return { el: to.hash, behavior: 'smooth' }
     }
     return { top: 0 }
   },
@@ -78,11 +77,6 @@ const router = createRouter({
       component: () => import('../views/AnalyticsDashboard.vue'),
     },
     {
-      path: '/admin-promo',
-      name: 'admin-promo-code',
-      component: () => import('../views/AdminPromoCode.vue'),
-    },
-    {
       path: '/admin',
       name: 'admin',
       component: () => import('../components/admin/AdminLayout.vue'),
@@ -111,6 +105,18 @@ const router = createRouter({
           name: 'admin-room-property',
           component: () => import('../views/admin/AdminPlaceholderView.vue'),
           meta: { pageTitle: 'Room & Property' },
+        },
+        {
+          path: 'promocode',
+          name: 'admin-promocode',
+          component: () => import('../views/admin/AdminPromoCode.vue'),
+          meta: { pageTitle: 'Promocode Management' },
+        },
+        {
+          path: 'promocode/create',
+          name: 'admin-promocode-create',
+          component: () => import('../views/admin/AdminCreatePromo.vue'),
+          meta: { pageTitle: 'Create Promo Code' },
         },
         {
           path: 'analytics',

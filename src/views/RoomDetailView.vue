@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
+import { useBookingStore } from "@/stores/booking"
 import LandingChatFab from "@/components/landing/LandingChatFab.vue"
 import LandingFooter from "@/components/landing/LandingFooter.vue"
 import OtherRoomsSection from "@/components/room/OtherRoomsSection.vue"
@@ -12,6 +13,8 @@ import { fetchOtherRoomTypesForCarousel, fetchRoomTypeDetail } from "@/lib/roomC
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase"
 
 const route = useRoute()
+const router = useRouter()
+const bookingStore = useBookingStore()
 
 const room = ref<Room | null>(null)
 const otherRooms = ref<Room[]>([])
@@ -60,6 +63,28 @@ async function loadDetail() {
   } finally {
     loading.value = false
   }
+}
+
+const handleBookNow = () => {
+  if (!room.value) return
+  const checkIn = typeof route.query.checkIn === 'string' ? route.query.checkIn : ''
+  const checkOut = typeof route.query.checkOut === 'string' ? route.query.checkOut : ''
+  const roomCount = Math.max(1, parseInt(String(route.query.rooms ?? '1'), 10) || 1)
+  const adults = Math.max(1, parseInt(String(route.query.adults ?? '2'), 10) || 2)
+  const children = Math.max(0, parseInt(String(route.query.children ?? '0'), 10) || 0)
+
+  bookingStore.setRoom({
+    roomTypeId: room.value.id,
+    roomTypeName: room.value.name,
+    pricePerNight: room.value.currentPrice,
+    roomImage: room.value.coverImage,
+    checkIn,
+    checkOut,
+    guests: adults + children,
+    roomCount,
+  })
+  bookingStore.startTimer()
+  router.push('/payment-basic')
 }
 
 watch(
@@ -131,6 +156,7 @@ watch(
             <button
               type="button"
               class="font-open-sans w-full rounded bg-[#C14817] px-8 py-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#a83e14] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C14817] md:w-auto"
+              @click="handleBookNow"
             >
               Book Now
             </button>
