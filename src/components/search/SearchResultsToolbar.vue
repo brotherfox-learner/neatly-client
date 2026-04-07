@@ -1,33 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue"
-import { useRouter } from "vue-router"
+import { computed, onMounted, onUnmounted, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import LandingDateRangePicker from "@/components/landing/LandingDateRangePicker.vue"
-
-function todayIso(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${y}-${m}-${day}`
-}
-
-function addDays(iso: string, days: number): string {
-  const parts = iso.split("-").map(Number)
-  const y = parts[0] ?? 0
-  const mo = parts[1] ?? 1
-  const da = parts[2] ?? 1
-  const dt = new Date(y, mo - 1, da)
-  dt.setDate(dt.getDate() + days)
-  const yy = dt.getFullYear()
-  const mm = String(dt.getMonth() + 1).padStart(2, "0")
-  const dd = String(dt.getDate()).padStart(2, "0")
-  return `${yy}-${mm}-${dd}`
-}
+import { addDaysIsoLocal, todayIsoLocal } from "@/lib/dateIsoLocal"
 
 const router = useRouter()
+const route = useRoute()
 
-const checkIn = ref(todayIso())
-const checkOut = ref(addDays(todayIso(), 1))
+const checkIn = ref(todayIsoLocal())
+const checkOut = ref(addDaysIsoLocal(todayIsoLocal(), 1))
 
 const dateRangeRef = ref<InstanceType<typeof LandingDateRangePicker> | null>(null)
 
@@ -75,11 +56,48 @@ function onDatePopoverOpen(v: boolean) {
   if (v) guestPickerOpen.value = false
 }
 
-function onSearch() {
-  router.push({ name: "search" })
+function parsePositiveInt(v: unknown, fallback: number): number {
+  const n = Number.parseInt(String(v ?? ""), 10)
+  return Number.isFinite(n) && n >= 0 ? n : fallback
 }
 
-onMounted(() => document.addEventListener("mousedown", onClickOutside))
+function applySearchQueryFromRoute() {
+  const q = route.query
+  if (typeof q.checkIn === "string" && q.checkIn) checkIn.value = q.checkIn
+  if (typeof q.checkOut === "string" && q.checkOut) checkOut.value = q.checkOut
+  const rc = parsePositiveInt(q.rooms, 1)
+  rooms.value = rc < 1 ? 1 : Math.min(rc, 9)
+  const ad = parsePositiveInt(q.adults, 2)
+  adults.value = ad < 1 ? 1 : Math.min(ad, 30)
+  const ch = parsePositiveInt(q.children, 0)
+  children.value = Math.min(ch, 10)
+}
+
+watch(
+  () => route.query,
+  () => {
+    if (route.name === "search") applySearchQueryFromRoute()
+  },
+  { deep: true },
+)
+
+function onSearch() {
+  router.push({
+    name: "search",
+    query: {
+      checkIn: checkIn.value,
+      checkOut: checkOut.value,
+      rooms: String(rooms.value),
+      adults: String(adults.value),
+      children: String(children.value),
+    },
+  })
+}
+
+onMounted(() => {
+  if (route.name === "search") applySearchQueryFromRoute()
+  document.addEventListener("mousedown", onClickOutside)
+})
 onUnmounted(() => document.removeEventListener("mousedown", onClickOutside))
 </script>
 

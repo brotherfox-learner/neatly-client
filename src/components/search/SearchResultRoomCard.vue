@@ -2,17 +2,29 @@
 import { Images } from "lucide-vue-next"
 import { RouterLink } from "vue-router"
 import { formatPrice } from "@/data/rooms"
-import type { SearchResultMockRoom } from "@/data/searchResultMock"
+import type { SearchResultRoom } from "@/lib/roomCatalog"
 
 defineProps<{
-  room: SearchResultMockRoom
+  room: SearchResultRoom
 }>()
 </script>
 
 <template>
   <article
-    class="search-result-card flex flex-col overflow-hidden rounded-lg bg-white shadow-[0_2px_12px_rgba(0,0,0,0.06)] md:min-h-[280px] md:max-w-[1120px] md:flex-row"
+    class="search-result-card relative flex flex-col overflow-hidden rounded-lg bg-white shadow-[0_2px_12px_rgba(0,0,0,0.06)] md:min-h-[280px] md:max-w-[1120px] md:flex-row"
   >
+    <div
+      v-if="room.roomsLeft != null"
+      class="pointer-events-none absolute top-3 right-3 z-10 max-w-[min(17.5rem,calc(100%-1.5rem))] md:top-4 md:right-4"
+    >
+      <span
+        class="font-inter pointer-events-auto inline-flex w-full items-center justify-center rounded-full border border-[#C14817]/30 bg-white/95 px-3 py-1.5 text-center text-[11px] font-semibold leading-snug text-[#C14817] shadow-[0_2px_10px_rgba(0,0,0,0.08)] backdrop-blur-sm md:px-3.5 md:py-2 md:text-[12px]"
+        role="status"
+      >
+         Only {{ room.roomsLeft }} room remaining!
+      </span>
+    </div>
+
     <div
       class="relative h-[220px] w-full shrink-0 md:h-auto md:w-[min(40.5%,453px)] md:max-w-[453px] md:min-h-[280px]"
     >

@@ -2,32 +2,12 @@
 import { computed, onMounted, onUnmounted, ref } from "vue"
 import { useRouter } from "vue-router"
 import LandingDateRangePicker from "@/components/landing/LandingDateRangePicker.vue"
+import { addDaysIsoLocal, todayIsoLocal } from "@/lib/dateIsoLocal"
 
 const router = useRouter()
 
-function todayIso(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${y}-${m}-${day}`
-}
-
-function addDays(iso: string, days: number): string {
-  const parts = iso.split("-").map(Number)
-  const y = parts[0] ?? 0
-  const m = parts[1] ?? 1
-  const d = parts[2] ?? 1
-  const dt = new Date(y, m - 1, d)
-  dt.setDate(dt.getDate() + days)
-  const yy = dt.getFullYear()
-  const mm = String(dt.getMonth() + 1).padStart(2, "0")
-  const dd = String(dt.getDate()).padStart(2, "0")
-  return `${yy}-${mm}-${dd}`
-}
-
-const checkIn = ref(todayIso())
-const checkOut = ref(addDays(todayIso(), 1))
+const checkIn = ref(todayIsoLocal())
+const checkOut = ref(addDaysIsoLocal(todayIsoLocal(), 1))
 
 const dateRangeRef = ref<InstanceType<typeof LandingDateRangePicker> | null>(null)
 
@@ -274,7 +254,18 @@ onUnmounted(() => document.removeEventListener("mousedown", onClickOutside))
           <button
             type="button"
             class="font-open-sans h-12 w-full rounded-[4px] bg-orange-600 text-[16px] font-semibold text-white transition-colors hover:bg-orange-500 active:bg-orange-700 md:h-12 md:w-[144px]"
-            @click="router.push({ name: 'search' })"
+            @click="
+              router.push({
+                name: 'search',
+                query: {
+                  checkIn: checkIn,
+                  checkOut: checkOut,
+                  rooms: String(rooms),
+                  adults: String(adults),
+                  children: String(children),
+                },
+              })
+            "
           >
             Search
           </button>
