@@ -134,6 +134,41 @@ const router = createRouter({
       name: 'cancel-refund',
       component: () => import('../views/CancelRefundView.vue'),
     },
+    {
+      path: '/cancel-booking/:id',
+      name: 'cancel-booking',
+      component: () => import('../views/CancelBookingView.vue'),
+    },
+    {
+      path: '/change-date-success',
+      name: 'change-date-success',
+      component: () => import('../views/ChangeDateSuccessView.vue'),
+    },
+    {
+      path: '/change-date-fail',
+      name: 'change-date-fail',
+      component: () => import('../views/ChangeDateFailView.vue'),
+    },
+    {
+      path: '/cancel-refund-success',
+      name: 'cancel-refund-success',
+      component: () => import('../views/CancelRefundSuccessView.vue'),
+    },
+    {
+      path: '/cancel-refund-fail',
+      name: 'cancel-refund-fail',
+      component: () => import('../views/CancelRefundFailView.vue'),
+    },
+    {
+      path: '/cancel-booking-success',
+      name: 'cancel-booking-success',
+      component: () => import('../views/CancelBookingSuccessView.vue'),
+    },
+    {
+      path: '/cancel-booking-fail',
+      name: 'cancel-booking-fail',
+      component: () => import('../views/CancelBookingFailView.vue'),
+    },
   ],
 })
 
