@@ -75,6 +75,14 @@ function closeMenu() {
           <img :src="iconFile('notibell.svg')" alt="" class="size-6" width="24" height="24" />
         </button>
         <button
+          v-else
+          type="button"
+          class="flex size-10 shrink-0 items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200"
+          aria-label="Notifications"
+        >
+          <img :src="iconFile('notibell.svg')" alt="" class="size-6" width="24" height="24" />
+        </button>
+        <button
           type="button"
           class="text-gray-700 transition-colors hover:text-gray-900"
           aria-label="Open menu"
