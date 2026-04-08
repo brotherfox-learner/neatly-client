@@ -2,6 +2,11 @@ import axios from "axios"
 import { defineStore } from "pinia"
 
 import { api } from "@/lib/api"
+import {
+  avatarUploadResponseSchema,
+  profileUpdateSchema,
+  type ProfileUpdatePayload,
+} from "@/schemas/profile"
 import { getSupabase } from "@/lib/supabase"
 import { userResponseSchema, type UserResponse } from "@/schemas/userResponse"
 
@@ -17,6 +22,9 @@ type RegisterPayload = {
   password: string
   firstName?: string
   lastName?: string
+  phone?: string
+  dateOfBirth?: string
+  country?: string
 }
 
 export const useAuthStore = defineStore("auth", {
@@ -63,6 +71,20 @@ export const useAuthStore = defineStore("auth", {
       this.user = userResponseSchema.parse(data)
       return this.user
     },
+    async updateMe(payload: ProfileUpdatePayload) {
+      const parsed = profileUpdateSchema.parse(payload)
+      const { data } = await api.put<unknown>("/api/v1/me", parsed)
+      this.user = userResponseSchema.parse(data)
+      return this.user
+    },
+    async uploadProfileAvatar(file: File) {
+      const formData = new FormData()
+      formData.append("file", file)
+      const { data } = await api.post<unknown>("/api/v1/me/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      return avatarUploadResponseSchema.parse(data).avatarUrl
+    },
     async signIn(email: string, password: string) {
       const supabase = getSupabase()
       if (!supabase) {
@@ -108,6 +130,9 @@ export const useAuthStore = defineStore("auth", {
           data: {
             first_name: payload.firstName?.trim() || undefined,
             last_name: payload.lastName?.trim() || undefined,
+            phone_number: payload.phone?.trim() || undefined,
+            birth_date: payload.dateOfBirth?.trim() || undefined,
+            country: payload.country?.trim() || undefined,
           },
         },
       })

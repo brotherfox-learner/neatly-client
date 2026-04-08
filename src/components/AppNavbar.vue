@@ -75,14 +75,6 @@ function closeMenu() {
           <img :src="iconFile('notibell.svg')" alt="" class="size-6" width="24" height="24" />
         </button>
         <button
-          v-else
-          type="button"
-          class="text-gray-700 transition-colors hover:text-gray-900"
-          aria-label="Notifications"
-        >
-          <img src="/Frame.svg" alt="Notification icon" class="size-6" />
-        </button>
-        <button
           type="button"
           class="text-gray-700 transition-colors hover:text-gray-900"
           aria-label="Open menu"
@@ -189,7 +181,7 @@ function closeMenu() {
         <ul class="flex w-full flex-col">
           <li>
             <RouterLink
-              :to="{ name: 'home' }"
+              :to="{ name: 'profile' }"
               class="body-2 text-gray-700 flex w-full items-center gap-3 px-4 py-4 transition-colors hover:bg-gray-100"
               @click="closeMenu"
             >
@@ -341,7 +333,11 @@ function closeMenu() {
             >
               <img :src="iconFile('notibell.svg')" alt="" class="size-6" width="24" height="24" />
             </button>
-            <div class="flex min-w-0 items-center gap-2">
+            <RouterLink
+              :to="{ name: 'profile' }"
+              class="flex min-w-0 items-center gap-2 rounded-md outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+              aria-label="Open your profile"
+            >
               <div
                 class="size-10 shrink-0 overflow-hidden rounded-full bg-gray-200"
                 aria-hidden="true"
@@ -349,7 +345,7 @@ function closeMenu() {
                 <img
                   v-if="avatarSrc"
                   :src="avatarSrc"
-                  alt="Profile photo"
+                  alt=""
                   class="size-full object-cover"
                   width="40"
                   height="40"
@@ -369,7 +365,7 @@ function closeMenu() {
               >
                 {{ displayName }}
               </span>
-            </div>
+            </RouterLink>
           </div>
         </template>
 
