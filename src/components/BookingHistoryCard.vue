@@ -28,7 +28,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  cancelBooking: [id: number]
+  cancelBooking: [id: number, canRefund: boolean]
   roomDetail: [id: number]
   changeDate: [id: number]
 }>()
@@ -195,7 +195,7 @@ const formatCurrency = (amount: number) => {
         v-if="canCancel"
         type="button"
         class="font-open-sans cursor-pointer text-base font-semibold text-[#E76B39] transition-colors hover:text-orange-400"
-        @click="$emit('cancelBooking', booking.id)"
+        @click="$emit('cancelBooking', booking.id, canRefund)"
       >
         {{ canRefund ? 'Cancel Booking' : 'Cancel Booking (No Refund)' }}
       </button>

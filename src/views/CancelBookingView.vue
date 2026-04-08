@@ -15,18 +15,10 @@ const bookingDate = ref('Tue, 16 Oct 2022')
 const checkIn = ref('Th, 19 Oct 2022')
 const checkOut = ref('Fri, 20 Oct 2022')
 const guests = ref(2)
-const totalRefund = ref(2300.0)
 
-const formatCurrency = (amount: number) => {
-  return amount.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
-const handleConfirmRefund = () => {
-  // TODO: Call API to cancel & refund; navigate to fail on error
-  router.push({ name: 'cancel-refund-success' })
+const handleConfirmCancel = () => {
+  // TODO: Call API to cancel booking; navigate to fail on error
+  router.push({ name: 'cancel-booking-success' })
 }
 
 const handleCancel = () => {
@@ -38,19 +30,15 @@ const handleCancel = () => {
   <div class="bg-bg min-h-screen">
     <!-- Title Section -->
     <div class="mx-auto w-full max-w-[1120px] px-4 pt-10 pb-6 md:px-0 md:pt-20 md:pb-0">
-      <h1 class="refund-title text-[#2F3E35] md:text-[#465C50]">
-        Request a Refund
+      <h1 class="cancel-booking-title text-black">
+        Cancel Booking
       </h1>
     </div>
 
     <!-- Room History Card -->
-    <div
-      class="mx-auto flex w-full max-w-[1120px] flex-col items-start"
-    >
+    <div class="mx-auto flex w-full max-w-[1120px] flex-col items-start">
       <!-- Card content: vertical on mobile, horizontal on PC -->
-      <div
-        class="flex w-full flex-col items-start md:flex-row md:gap-12 md:py-10"
-      >
+      <div class="flex w-full flex-col items-start md:flex-row md:gap-12 md:py-10">
         <!-- Room Image -->
         <img
           :src="roomImage"
@@ -59,9 +47,7 @@ const handleCancel = () => {
         />
 
         <!-- Room Wrapper -->
-        <div
-          class="flex w-full flex-col gap-8 px-4 pt-4 pb-6 md:flex-1 md:px-0 md:pt-0 md:pb-6"
-        >
+        <div class="flex w-full flex-col gap-8 px-4 pt-4 pb-6 md:flex-1 md:px-0 md:pt-0 md:pb-6">
           <!-- Room Name + Booking Date -->
           <div
             class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between md:gap-4"
@@ -72,35 +58,28 @@ const handleCancel = () => {
             </p>
           </div>
 
-          <!-- Check-in/out + Guests  &  Total Refund -->
-          <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-6">
-            <!-- Left: dates & guests -->
-            <div class="flex flex-col">
-              <!-- Date row -->
-              <div class="flex flex-row items-baseline gap-2 py-1">
-                <span class="body-1 text-[#646D89]">{{ checkIn }}</span>
-                <span class="body-1 text-[#646D89]">-</span>
-                <span class="body-1 text-[#646D89]">{{ checkOut }}</span>
-              </div>
-              <!-- Guests -->
-              <div class="flex flex-row items-baseline py-1">
-                <span class="body-1 text-[#646D89]">{{ guests }} Guests</span>
-              </div>
+          <!-- Dates + Guests + Warning -->
+          <div class="flex flex-col">
+            <!-- Date row -->
+            <div class="flex flex-row items-baseline gap-2 py-1">
+              <span class="body-1 text-[#646D89]">{{ checkIn }}</span>
+              <span class="body-1 text-[#646D89]">-</span>
+              <span class="body-1 text-[#646D89]">{{ checkOut }}</span>
             </div>
-
-            <!-- Right: Total Refund -->
-            <div class="flex flex-col gap-1 md:items-end">
-              <span class="body-1 text-[#2A2E3F]">Total Refund</span>
-              <span class="headline-5 text-[#2A2E3F]">
-                THB {{ formatCurrency(totalRefund) }}
-              </span>
+            <!-- Guests -->
+            <div class="flex flex-row items-baseline py-1">
+              <span class="body-1 text-[#646D89]">{{ guests }} Guests</span>
             </div>
+            <!-- No-refund warning -->
+            <p class="mt-2 text-[12px] leading-[150%] tracking-[-0.02em] text-[#B61515]">
+              *Cancellation of the booking now will not be able to request a refund.
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Button Wrapper -->
-      <!-- Mobile: stacked (confirm button full-width + cancel below), border-bottom on card area -->
+      <!-- Mobile: stacked (confirm button full-width + cancel below), border-top on button section -->
       <!-- PC: row with cancel left, confirm right, separated by border-top -->
       <div
         class="flex w-full flex-col items-center gap-6 border-t border-[#E4E6ED] px-4 pt-6 pb-6 md:flex-row md:justify-between md:px-0 md:py-10"
@@ -114,13 +93,13 @@ const handleCancel = () => {
           Cancel
         </button>
 
-        <!-- Cancel and Refund this Booking (mobile: order-1 full-width, PC: order-2 right) -->
+        <!-- Cancel this Booking (mobile: order-1 full-width, PC: order-2 right) -->
         <button
           type="button"
           class="font-open-sans order-1 w-full cursor-pointer rounded bg-[#C14817] px-8 py-4 text-center text-base font-semibold text-white transition-colors hover:bg-orange-500 active:bg-orange-700 md:order-2 md:w-auto"
-          @click="handleConfirmRefund"
+          @click="handleConfirmCancel"
         >
-          Cancel and Refund this Booking
+          Cancel this Booking
         </button>
       </div>
     </div>
@@ -128,7 +107,7 @@ const handleCancel = () => {
 </template>
 
 <style scoped>
-.refund-title {
+.cancel-booking-title {
   font-family: var(--font-noto-serif);
   font-weight: 500;
   letter-spacing: -0.02em;
@@ -137,7 +116,7 @@ const handleCancel = () => {
 }
 
 @media (min-width: 768px) {
-  .refund-title {
+  .cancel-booking-title {
     font-size: 68px;
     line-height: 125%;
   }

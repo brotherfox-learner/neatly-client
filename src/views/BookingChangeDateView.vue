@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { Calendar } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Calendar, X } from 'lucide-vue-next'
 
 const router = useRouter()
-const route = useRoute()
 
-const bookingId = ref(Number(route.params.id) || 1)
+// TODO: const bookingId = useRoute().params.id  (use when API is ready)
 
 // Mock data – replace with API call using bookingId
 const roomName = ref('Superior Garden View')
@@ -70,13 +69,20 @@ const minCheckInDate = computed(() => {
   return toInputDate(tomorrow.toISOString())
 })
 
+const showModal = ref(false)
+
 const handleConfirm = () => {
-  console.log('Confirm change date for booking:', bookingId.value, {
-    checkIn: newCheckInISO.value,
-    checkOut: newCheckOutISO.value,
-    nights: originalNights.value,
-  })
-  // TODO: Call API to update dates, then navigate back
+  showModal.value = true
+}
+
+const handleModalConfirm = () => {
+  showModal.value = false
+  // TODO: Call API to update dates before navigating
+  router.push({ name: 'change-date-success' })
+}
+
+const handleModalClose = () => {
+  showModal.value = false
 }
 
 const handleCancel = () => {
@@ -204,6 +210,52 @@ const handleCancel = () => {
         </button>
       </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+        @click.self="handleModalClose"
+      >
+        <div class="w-full max-w-[440px] rounded-lg bg-white p-6 shadow-xl">
+          <!-- Header -->
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-[#2A2E3F]">Change Date</h2>
+            <button
+              type="button"
+              class="cursor-pointer text-[#9AA1B9] hover:text-[#2A2E3F]"
+              @click="handleModalClose"
+            >
+              <X class="size-5" />
+            </button>
+          </div>
+
+          <!-- Body -->
+          <p class="body-1 mb-6 text-[#646D89]">
+            Are you sure you want to change your check-in and check-out date?
+          </p>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              class="font-open-sans cursor-pointer rounded border border-[#D6D9E4] px-5 py-2.5 text-sm font-semibold text-[#2A2E3F] transition-colors hover:bg-gray-50"
+              @click="handleModalClose"
+            >
+              No, I don't
+            </button>
+            <button
+              type="button"
+              class="font-open-sans cursor-pointer rounded bg-[#C14817] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-500 active:bg-orange-700"
+              @click="handleModalConfirm"
+            >
+              Yes, I want to change
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 

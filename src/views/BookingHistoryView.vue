@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BookingHistoryCard from '@/components/BookingHistoryCard.vue'
 import type { BookingItem } from '@/components/BookingHistoryCard.vue'
+import { rooms } from '@/data/rooms'
 
 const router = useRouter()
 
@@ -161,12 +162,23 @@ const bookings = ref<BookingItem[]>([
   },
 ])
 
-const handleCancelBooking = (id: number) => {
-  router.push({ name: 'cancel-refund', params: { id } })
+const handleCancelBooking = (id: number, canRefund: boolean) => {
+  if (canRefund) {
+    router.push({ name: 'cancel-refund', params: { id } })
+  } else {
+    router.push({ name: 'cancel-booking', params: { id } })
+  }
 }
 
 const handleRoomDetail = (id: number) => {
-  console.log('View room detail:', id)
+  const booking = bookings.value.find(b => b.id === id)
+  if (!booking) return
+
+  const room = rooms.find(r => r.name === booking.roomName)
+  if (!room) return
+
+  const { href } = router.resolve({ name: 'room-detail', params: { id: room.id } })
+  window.open(href, '_blank')
 }
 
 const handleChangeDate = (id: number) => {
