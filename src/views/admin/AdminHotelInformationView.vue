@@ -60,20 +60,22 @@ const hotelLogoPreviewUrl = ref("/logo.svg")
               Hotel logo *
             </label>
 
-            <div class="relative flex items-center">
-              <img
-                :src="hotelLogoPreviewUrl"
-                alt="Hotel logo preview"
-                class="h-[120px] w-[120px] rounded-[4px] border border-[#E4E6ED] bg-white object-contain p-3"
-              />
-              <button
-                type="button"
-                class="absolute -right-3 -top-3 flex size-7 items-center justify-center rounded-full bg-[#B61515] text-white"
-                aria-label="Remove hotel logo"
-                @click="hotelLogoPreviewUrl = '/logo.svg'"
-              >
-                <X class="size-[14px]" aria-hidden="true" />
-              </button>
+            <div class="flex items-center">
+              <div class="relative inline-flex">
+                <img
+                  :src="hotelLogoPreviewUrl"
+                  alt="Hotel logo preview"
+                  class="h-[120px] w-[120px] rounded-[4px] border border-[#E4E6ED] bg-white object-contain p-3"
+                />
+                <button
+                  type="button"
+                  class="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-[#B61515] text-white"
+                  aria-label="Remove hotel logo"
+                  @click="hotelLogoPreviewUrl = '/logo.svg'"
+                >
+                  <X class="size-[14px]" aria-hidden="true" />
+                </button>
+              </div>
               <input id="hotel-logo" type="file" class="sr-only" aria-label="Upload hotel logo" />
             </div>
           </section>
