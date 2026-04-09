@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
-/** ตัวอย่าง schema ฟอร์ม login — ใช้ parse ก่อนส่งไป Supabase หรือ API */
+/** Example login form schema — parse before sending to Supabase or the API. */
 export const loginFormSchema = z.object({
-  email: z.string().email('อีเมลไม่ถูกต้อง'),
-  password: z.string().min(8, 'รหัสผ่านอย่างน้อย 8 ตัวอักษร'),
+  email: z.string().email('Please enter a valid email address.'),
+  password: z.string().min(8, 'Password must be at least 8 characters.'),
 })
 
 export type LoginFormValues = z.infer<typeof loginFormSchema>

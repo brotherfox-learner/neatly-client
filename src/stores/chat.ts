@@ -8,6 +8,25 @@ import {
   clearPersistedClientChat,
 } from '@/lib/chatSessionStorage'
 
+/** Shown when API presets omit a promotion_cards row; loads answer from GET /chat/presets/promotions */
+const EMBEDDED_PROMOTION_PRESET_ID = 'embedded-promotion'
+
+function ensurePromotionPresetChip(list: PresetQuestion[]): PresetQuestion[] {
+  const hasPromo = list.some(
+    (p) =>
+      p.responseType === 'promotion_cards' || String(p.id) === EMBEDDED_PROMOTION_PRESET_ID,
+  )
+  if (hasPromo) return list
+  return [
+    ...list,
+    {
+      id: EMBEDDED_PROMOTION_PRESET_ID,
+      question: 'Promotions',
+      responseType: 'promotion_cards',
+    },
+  ]
+}
+
 export interface PresetQuestion {
   id: string
   question: string
@@ -275,11 +294,23 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  function addGreeting() {
+  const DEFAULT_GREETING =
+    "Welcome to Neatly Hotel! 🌟 I'm your virtual assistant. Choose a topic you'd like to know more about. I'm here to help! 😊"
+
+  async function addGreeting() {
+    let text = DEFAULT_GREETING
+    try {
+      const baseUrl = getApiBaseUrl()
+      const res = await axios.get<{ greeting?: string }>(`${baseUrl}/api/v1/chat/defaults`)
+      const g = res.data?.greeting?.trim()
+      if (g) text = g
+    } catch {
+      /* keep default */
+    }
     messages.value.push({
       id: crypto.randomUUID(),
       type: 'bot-text',
-      text: "Welcome to Neatly Hotel! 🌟 I'm your virtual assistant. Choose a topic you'd like to know more about. I'm here to help! 😊",
+      text,
       timestamp: Date.now(),
     })
   }
@@ -293,7 +324,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const baseUrl = getApiBaseUrl()
       const res = await axios.get<PresetQuestion[]>(`${baseUrl}/api/v1/chat/presets`)
-      presetQuestions.value = res.data
+      presetQuestions.value = ensurePromotionPresetChip(res.data)
       addPresetButtons()
     } catch (e) {
       console.error('Failed to load presets:', e)
@@ -303,7 +334,7 @@ export const useChatStore = defineStore('chat', () => {
         { id: 'fallback-2', question: 'Booking', responseType: 'room_cards' },
         { id: 'fallback-3', question: 'Check-in & Check-out Time', responseType: 'text' },
         { id: 'fallback-4', question: 'Payment Methods', responseType: 'options' },
-        { id: 'fallback-5', question: 'Promotion', responseType: 'promotion_cards' },
+        { id: 'fallback-5', question: 'Promotions', responseType: 'promotion_cards' },
       ]
       addPresetButtons()
     } finally {
@@ -312,6 +343,9 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function addPresetButtons() {
+    if (presetQuestions.value.length > 0) {
+      presetQuestions.value = ensurePromotionPresetChip(presetQuestions.value)
+    }
     // Remove any existing preset-buttons message
     messages.value = messages.value.filter((m) => m.type !== 'preset-buttons')
     messages.value.push({
@@ -337,7 +371,32 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const baseUrl = getApiBaseUrl()
 
-      // For fallback presets, use hardcoded responses
+      const usePromotionEndpoint =
+        preset.id === EMBEDDED_PROMOTION_PRESET_ID ||
+        (preset.id.startsWith('fallback-') && preset.responseType === 'promotion_cards')
+
+      if (usePromotionEndpoint) {
+        await simulateDelay(500)
+        const promoRes = await axios.get<PresetAnswer>(`${baseUrl}/api/v1/chat/presets/promotions`)
+        const promoData = promoRes.data
+        messages.value.push({
+          id: crypto.randomUUID(),
+          type: 'bot-text',
+          text: promoData.answer,
+          timestamp: Date.now(),
+        })
+        if (promoData.cards && promoData.cards.length > 0) {
+          messages.value.push({
+            id: crypto.randomUUID(),
+            type: 'bot-promotions',
+            promotionCards: promoData.cards as PromotionCard[],
+            timestamp: Date.now(),
+          })
+        }
+        return
+      }
+
+      // For other fallback presets, use hardcoded responses
       if (preset.id.startsWith('fallback-')) {
         await simulateDelay(800)
         handleFallbackPreset(preset)
