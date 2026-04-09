@@ -160,6 +160,7 @@ const handleAction = (room: RoomCard) => {
 
 .slider-container {
   display: flex;
+  align-items: flex-start;
   overflow-x: auto;
   overflow-y: hidden;
   gap: 14px;
@@ -184,6 +185,9 @@ const handleAction = (room: RoomCard) => {
 .room-card {
   flex: 0 0 calc(82% - 8px);
   max-width: 220px;
+  min-height: 00px;
+  display: flex;
+  flex-direction: column;
   background: #ffffff;
   border-radius: 14px;
   overflow: hidden;
@@ -193,8 +197,12 @@ const handleAction = (room: RoomCard) => {
 }
 
 .card-image-wrap {
+  flex-shrink: 0;
   width: 100%;
+  max-width: 220px;
+  max-height: 150px;
   aspect-ratio: 16 / 10;
+  overflow: hidden;
   background: #f1f5f9;
 }
 
@@ -215,6 +223,10 @@ const handleAction = (room: RoomCard) => {
 }
 
 .card-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: 12px 12px 0;
 }
 
@@ -256,8 +268,9 @@ const handleAction = (room: RoomCard) => {
 }
 
 .room-desc {
-  margin: 0 0 10px;
+  margin: 5px 0 15px 0;
   font-size: 12px;
+  min-height: 50px;
   line-height: 1.45;
   color: #64748b;
   display: -webkit-box;
@@ -270,7 +283,9 @@ const handleAction = (room: RoomCard) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
   width: calc(100% + 24px);
+  margin-top: auto;
   margin-left: -12px;
   margin-right: -12px;
   padding: 10px 14px;

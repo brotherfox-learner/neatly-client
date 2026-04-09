@@ -15,6 +15,7 @@ const navItems = [
   { to: "/admin/hotel-information", label: "Hotel Information", icon: "hotel" as const },
   { to: "/admin/room-property", label: "Room & Property", icon: "room" as const },
   { to: "/admin/analytics", label: "Analytics Dashboard", icon: "analytic" as const },
+  { to: "/admin/chatbot-setup", label: "Chatbot Setup", icon: "chat" as const },
   { to: "/admin/live-chat", label: "Live Chat Responses", icon: "chat" as const },
 ] as const
 

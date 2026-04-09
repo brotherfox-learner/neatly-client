@@ -125,6 +125,12 @@ const router = createRouter({
           meta: { pageTitle: 'Analytics Dashboard' },
         },
         {
+          path: 'chatbot-setup',
+          name: 'admin-chatbot-setup',
+          component: () => import('../views/admin/AdminPlaceholderView.vue'),
+          meta: { pageTitle: 'Chatbot Setup' },
+        },
+        {
           path: 'live-chat',
           name: 'admin-live-chat',
           component: () => import('../views/admin/AdminLiveChatView.vue'),
