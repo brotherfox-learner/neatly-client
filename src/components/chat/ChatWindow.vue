@@ -65,29 +65,13 @@ const handleSend = () => {
     <header class="chat-header">
       <div class="chat-header-content">
         <span class="chat-header-mark" aria-hidden="true">
-          <svg class="chat-header-bubble chat-header-bubble--back" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M4 10c0-3.314 2.686-6 6-6h6a4 4 0 014 4v6a4 4 0 01-4 4h-2l-4 3v-3H10a6 6 0 01-6-6v-2z"
-              fill="#81A08F"
-            />
-          </svg>
-          <svg class="chat-header-bubble chat-header-bubble--front" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M6 12c0-2.761 2.239-5 5-5h5a3 3 0 013 3v5a3 3 0 01-3 3h-1.5L12 20v-2H11a5 5 0 01-5-5v-1z"
-              fill="#cbd5e1"
-            />
-          </svg>
-          <span class="chat-header-plus">+</span>
+          <img src="/LandingPagePic/icon.svg" alt="" class="chat-fab__icon" width="48"
+            height="48" />
         </span>
         <h3 class="chat-title">Neatly Assistant</h3>
       </div>
       <div class="chat-header-actions">
-        <button
-          type="button"
-          class="chat-new"
-          :disabled="store.isRestoring"
-          @click="store.startNewChat()"
-        >
+        <button type="button" class="chat-new" :disabled="store.isRestoring" @click="store.startNewChat()">
           New chat
         </button>
         <button type="button" class="chat-close" @click="store.toggleChat()">
@@ -130,36 +114,19 @@ const handleSend = () => {
           <ChatBubble :message="msg" />
         </template>
       </div>
-      
+
       <div v-if="store.isTyping" class="message-wrapper">
-         <TypingIndicator />
+        <TypingIndicator />
       </div>
     </div>
 
     <!-- Input Area -->
     <div class="chat-input-area">
       <form @submit.prevent="handleSend" class="chat-input-form relative">
-        <input
-          v-model="inputMessage"
-          type="text"
-          class="chat-input"
-          placeholder="Write your message..."
-        />
-        <button
-          type="submit"
-          class="chat-send-btn"
-          :disabled="!inputMessage.trim()"
-          aria-label="Send message"
-        >
-          <svg
-            class="chat-send-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
+        <input v-model="inputMessage" type="text" class="chat-input" placeholder="Write your message..." />
+        <button type="submit" class="chat-send-btn" :disabled="!inputMessage.trim()" aria-label="Send message">
+          <svg class="chat-send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"></line>
             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
           </svg>
@@ -315,9 +282,11 @@ const handleSend = () => {
 .chat-messages::-webkit-scrollbar {
   width: 6px;
 }
+
 .chat-messages::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .chat-messages::-webkit-scrollbar-thumb {
   background-color: #cbd5e1;
   border-radius: 10px;
