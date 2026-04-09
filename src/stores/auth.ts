@@ -8,6 +8,7 @@ import {
   type ProfileUpdatePayload,
 } from "@/schemas/profile"
 import { getSupabase } from "@/lib/supabase"
+import { useChatStore } from "@/stores/chat"
 import { userResponseSchema, type UserResponse } from "@/schemas/userResponse"
 
 /** True when Spring `/api/v1/me` rejected the JWT (revoked user, invalid auth). */
@@ -159,6 +160,7 @@ export const useAuthStore = defineStore("auth", {
       await supabase?.auth.signOut()
       this.user = null
       this.initialized = true
+      useChatStore().resetForLogout()
     },
   },
 })

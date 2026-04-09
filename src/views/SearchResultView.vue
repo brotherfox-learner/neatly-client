@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
 import { useRoute } from "vue-router"
-import LandingChatFab from "@/components/landing/LandingChatFab.vue"
 import LandingFooter from "@/components/landing/LandingFooter.vue"
 import SearchResultRoomCard from "@/components/search/SearchResultRoomCard.vue"
 import SearchResultsLoading from "@/components/search/SearchResultsLoading.vue"
@@ -113,6 +112,5 @@ watch(
     </section>
 
     <LandingFooter />
-    <LandingChatFab />
   </div>
 </template>
