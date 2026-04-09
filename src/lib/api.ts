@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { getApiBaseUrl } from './apiBaseUrl'
 import { getSupabase } from './supabase'
 
 function isPublicBackendPath(url: string | undefined): boolean {
@@ -11,7 +12,7 @@ function isPublicBackendPath(url: string | undefined): boolean {
 }
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? '',
+  baseURL: getApiBaseUrl(),
   timeout: 30_000,
 })
 
