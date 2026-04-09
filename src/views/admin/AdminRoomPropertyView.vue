@@ -47,6 +47,9 @@ const galleryImageInputRef = ref<HTMLInputElement | null>(null)
 /** `null` = append new gallery image; number = replace at index */
 const galleryUploadTargetIndex = ref<number | null>(null)
 const draggedGalleryIndex = ref<number | null>(null)
+const dragOverGalleryIndex = ref<number | null>(null)
+const draggedAmenityIndex = ref<number | null>(null)
+const dragOverAmenityIndex = ref<number | null>(null)
 
 const editForm = ref({
   roomType: "",
@@ -218,15 +221,60 @@ function onGalleryDragStart(idx: number) {
   draggedGalleryIndex.value = idx
 }
 
+function onGalleryDragOver(e: DragEvent, idx: number) {
+  e.preventDefault()
+  dragOverGalleryIndex.value = idx
+}
+
+function onGalleryDragLeave() {
+  dragOverGalleryIndex.value = null
+}
+
+function onGalleryDragEnd() {
+  draggedGalleryIndex.value = null
+  dragOverGalleryIndex.value = null
+}
+
 function onGalleryDrop(dropIndex: number) {
   const from = draggedGalleryIndex.value
   draggedGalleryIndex.value = null
+  dragOverGalleryIndex.value = null
   if (from === null || from === dropIndex) return
   const next = [...editForm.value.roomGalleryUrls]
   const [moved] = next.splice(from, 1)
   if (!moved) return
   next.splice(dropIndex, 0, moved)
   editForm.value.roomGalleryUrls = next
+}
+
+function onAmenityDragStart(idx: number) {
+  draggedAmenityIndex.value = idx
+}
+
+function onAmenityDragOver(e: DragEvent, idx: number) {
+  e.preventDefault()
+  dragOverAmenityIndex.value = idx
+}
+
+function onAmenityDragLeave() {
+  dragOverAmenityIndex.value = null
+}
+
+function onAmenityDragEnd() {
+  draggedAmenityIndex.value = null
+  dragOverAmenityIndex.value = null
+}
+
+function onAmenityDrop(dropIndex: number) {
+  const from = draggedAmenityIndex.value
+  draggedAmenityIndex.value = null
+  dragOverAmenityIndex.value = null
+  if (from === null || from === dropIndex) return
+  const next = [...editForm.value.amenities]
+  const [moved] = next.splice(from, 1)
+  if (moved === undefined) return
+  next.splice(dropIndex, 0, moved)
+  editForm.value.amenities = next
 }
 
 function parseNumericInput(value: string): number {
@@ -886,11 +934,17 @@ onMounted(() => {
                   class="flex w-[167px] flex-col items-center gap-1"
                 >
                   <section
-                    class="relative inline-flex"
+                    class="relative inline-flex cursor-grab rounded-[4px] transition-all active:cursor-grabbing"
+                    :class="[
+                      draggedGalleryIndex === idx ? 'opacity-40' : '',
+                      dragOverGalleryIndex === idx && draggedGalleryIndex !== idx ? 'ring-2 ring-[#E76B39] ring-offset-2' : '',
+                    ]"
                     draggable="true"
                     @dragstart="onGalleryDragStart(idx)"
-                    @dragover.prevent
+                    @dragover="onGalleryDragOver($event, idx)"
+                    @dragleave="onGalleryDragLeave"
                     @drop.prevent="onGalleryDrop(idx)"
+                    @dragend="onGalleryDragEnd"
                   >
                     <img :src="url" :alt="`Gallery image ${idx + 1}`" class="h-[167px] w-[167px] rounded-[4px] border border-[#E4E6ED] bg-[#F1F2F6] object-cover" />
                     <button
@@ -939,9 +993,19 @@ onMounted(() => {
               <section
                 v-for="(_, idx) in editForm.amenities"
                 :key="`amenity-row-${idx}`"
-                class="flex items-end gap-[24px]"
+                draggable="true"
+                class="flex items-end gap-[24px] rounded-[4px] transition-all"
+                :class="[
+                  draggedAmenityIndex === idx ? 'opacity-40' : '',
+                  dragOverAmenityIndex === idx && draggedAmenityIndex !== idx ? 'bg-[#F6F7FC] ring-1 ring-[#E76B39]' : '',
+                ]"
+                @dragstart="onAmenityDragStart(idx)"
+                @dragover="onAmenityDragOver($event, idx)"
+                @dragleave="onAmenityDragLeave"
+                @drop.prevent="onAmenityDrop(idx)"
+                @dragend="onAmenityDragEnd"
               >
-                <span class="hidden shrink-0 mb-[12px] text-[#E76B39] lg:inline" aria-hidden="true">::</span>
+                <span class="hidden shrink-0 mb-[12px] cursor-grab text-[#E76B39] active:cursor-grabbing lg:inline" aria-label="Drag to reorder">::</span>
                 <section class="flex min-w-0 w-full flex-1 flex-col gap-1">
                   <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" :for="`amenity-input-${idx}`">Amenitiy *</label>
                   <input
