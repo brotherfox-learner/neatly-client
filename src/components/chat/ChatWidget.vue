@@ -1,16 +1,31 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
 import { useChatWebSocket } from '@/composables/useChatWebSocket'
+import { getSupabase } from '@/lib/supabase'
 import ChatWindow from './ChatWindow.vue'
 
 const route = useRoute()
 const store = useChatStore()
 useChatWebSocket()
 
+let unsubscribeAuth: (() => void) | undefined
+
 onMounted(() => {
   void store.tryRestoreFromBrowserSession()
+  void store.refreshChatAuthSession()
+  const sb = getSupabase()
+  if (sb) {
+    const { data } = sb.auth.onAuthStateChange(() => {
+      void store.refreshChatAuthSession()
+    })
+    unsubscribeAuth = () => data.subscription.unsubscribe()
+  }
+})
+
+onUnmounted(() => {
+  unsubscribeAuth?.()
 })
 
 const showWidget = computed(() => {

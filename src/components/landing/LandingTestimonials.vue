@@ -5,7 +5,7 @@ import { useAutoplayCarousel } from "@/composables/useAutoplayCarousel"
 const slides = [
   {
     quote:
-      "“lorem ipsum dolor sit amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint, velit official consequat duis enim velit mollit, exercitation minim amet consequat sunt.”",
+      "“We booked at the last minute and still felt like VIPs—the team anticipated everything we needed before we asked.”",
     name: "Katherine",
     company: "Company®",
     image: "/LandingPagePic/SlidePic1.jpg",
