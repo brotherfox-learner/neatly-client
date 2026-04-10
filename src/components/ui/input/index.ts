@@ -1,0 +1,6 @@
+export { default as BaseInput } from './base-input.vue'
+export { default as BaseDropdown } from './base-dropdown.vue'
+export { default as BaseDatePicker } from './base-date-picker.vue'
+export { default as DateRangePicker } from './date-range-picker.vue'
+export { default as RoomsGuestsInput } from './rooms-guests-input.vue'
+export { default as PhotoUpload } from './photo-upload.vue'

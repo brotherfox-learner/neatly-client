@@ -31,6 +31,11 @@ const router = createRouter({
       component: () => import('../views/BackendConnectionView.vue'),
     },
     {
+      path: '/dev/preview',
+      name: 'dev-preview',
+      component: () => import('../views/DevPreviewView.vue'),
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
