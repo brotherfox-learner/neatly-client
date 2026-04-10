@@ -5,6 +5,9 @@ import DashboardTopCard from '@/components/dashboard/DashboardTopCard.vue'
 import RoomAvailabilityCard from '@/components/dashboard/RoomAvailabilityCard.vue'
 import BookingTrendsByDayCard from '@/components/dashboard/BookingTrendsByDayCard.vue'
 import RevenueTrendCard from '@/components/dashboard/RevenueTrendCard.vue'
+import OccupancyGuest from '@/components/dashboard/OccupancyGuest.vue'
+import CheckInCheckOutTimesCard from '@/components/dashboard/CheckInCheckOutTimesCard.vue'
+import WebsiteTraffic from '@/components/dashboard/WebsiteTraffic.vue'
 
 import CartIcon from '@/assets/icons/cart.svg?component'
 import BookingIcon from '@/assets/icons/booking.svg?component'
@@ -224,6 +227,58 @@ onUnmounted(() => {
   document.documentElement.classList.remove('allow-x-scroll')
   document.body.classList.remove('allow-x-scroll')
 })
+
+// ── Occupancy & Guest ──────────────────────────────────────────
+const occFrom = ref(new Date(new Date().getFullYear(), 0, 1))
+const occTo = ref(new Date())
+const occViewBy = ref('overall')
+const occGranularity = ref('month')
+const occUseLive = ref(false)
+
+const occData = ref({
+  occupancySeries: [
+    { date: '2026-01-01', percent: 55, occupiedRooms: 11, totalRooms: 20 },
+    { date: '2026-02-01', percent: 70, occupiedRooms: 14, totalRooms: 20 },
+    { date: '2026-03-01', percent: 60, occupiedRooms: 12, totalRooms: 20 },
+    { date: '2026-04-01', percent: 80, occupiedRooms: 16, totalRooms: 20 },
+  ],
+  occupancyByRoomTypeSeries: [],
+  roomTypes: [],
+  guestVisit: {
+    totalGuests: 120,
+    segments: [
+      { id: 'new', label: 'New guests', count: 80, percent: 67 },
+      { id: 'returning', label: 'Returning guests', count: 40, percent: 33 },
+    ],
+  },
+  paymentMethods: [
+    { id: 'credit_card', label: 'Credit card', count: 90, percent: 75 },
+    { id: 'cash', label: 'Cash', count: 30, percent: 25 },
+  ],
+})
+const occLoading = ref(false)
+
+// ── Check-in and Check-out Times Averages ──────────────────────────────────────────
+const checkTimeData = ref({
+  checkIn: { label: 'Check-in', time: '14:23', description: 'Check-in time from 2:00 PM onwards' },
+  checkOut: { label: 'Check-out', time: '11:45', description: 'Check-out time by 12:00 PM' },
+})
+const checkTimeLoading = ref(false)
+
+const trafficPeriod = ref('last_7_days')
+const trafficPage = ref('all')
+const trafficLoading = ref(false)
+const trafficRoomOptions = ref([])
+
+const trafficData = ref([
+  { label: '2026-04-04', value: 120 },
+  { label: '2026-04-05', value: 98 },
+  { label: '2026-04-06', value: 145 },
+  { label: '2026-04-07', value: 210 },
+  { label: '2026-04-08', value: 178 },
+  { label: '2026-04-09', value: 230 },
+  { label: '2026-04-10', value: 195 },
+])
 </script>
 
 <template>
@@ -272,7 +327,9 @@ onUnmounted(() => {
             />
           </section>
         </div>
-        <section class="rounded-[8px] border border-gray-300 p-[16px] bg-white lg:pt-[32px] lg:pb-[50px] lg:px-[40px]">
+        <section
+          class="rounded-[8px] border border-gray-300 p-[16px] bg-white lg:pt-[32px] lg:pb-[50px] lg:px-[40px]"
+        >
           <RevenueTrendCard
             :date-from="revenueDateFrom"
             :date-to="revenueDateTo"
@@ -286,6 +343,39 @@ onUnmounted(() => {
             @mode-change="revenueMode = $event"
             @granularity-change="revenueGranularity = $event"
             @toggle-live="revenueUseLive = !revenueUseLive"
+          />
+        </section>
+
+        <section class="rounded-[8px] border border-gray-300 p-[16px] bg-white">
+          <OccupancyGuest
+            :date-from="occFrom"
+            :date-to="occTo"
+            :view-by="occViewBy"
+            :granularity="occGranularity"
+            :data="occData"
+            :loading="occLoading"
+            :use-live="occUseLive"
+            @date-from-change="occFrom = $event"
+            @date-to-change="occTo = $event"
+            @view-by-change="occViewBy = $event"
+            @granularity-change="occGranularity = $event"
+            @toggle-live="occUseLive = !occUseLive"
+          />
+        </section>
+
+        <section class="rounded-[8px] border border-gray-300 p-[16px] bg-white">
+          <CheckInCheckOutTimesCard :data="checkTimeData" :loading="checkTimeLoading" />
+        </section>
+
+        <section class="rounded-[8px] border border-gray-300 p-[16px] bg-white">
+          <WebsiteTraffic
+            :page-id="trafficPage"
+            :period-id="trafficPeriod"
+            :data="trafficData"
+            :loading="trafficLoading"
+            :room-options="trafficRoomOptions"
+            @page-change="trafficPage = $event"
+            @period-change="trafficPeriod = $event"
           />
         </section>
       </main>
