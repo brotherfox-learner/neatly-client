@@ -27,6 +27,11 @@ function ensurePromotionPresetChip(list: PresetQuestion[]): PresetQuestion[] {
   ]
 }
 
+/** Preset chips come from API (already filtered by show_in_chat on server); only merge embedded Promotions if missing. */
+function applyPresetChipPolicy(list: PresetQuestion[]): PresetQuestion[] {
+  return ensurePromotionPresetChip(list)
+}
+
 export interface PresetQuestion {
   id: string
   question: string
@@ -124,8 +129,17 @@ export const useChatStore = defineStore('chat', () => {
   const isTyping = ref(false)
   const isLoadingPresets = ref(false)
   const isRestoring = ref(false)
+  /** Supabase session present — required for live agent / contact admin */
+  const isLoggedInForChat = ref(false)
 
   const hasMessages = computed(() => messages.value.length > 0)
+
+  async function refreshChatAuthSession() {
+    const { getSupabase } = await import('@/lib/supabase')
+    const sb = getSupabase()
+    const token = (await sb?.auth.getSession())?.data?.session?.access_token
+    isLoggedInForChat.value = Boolean(token)
+  }
 
   function roomStatusToMode(status: string): ChatMode {
     if (status === 'WAITING_AGENT') return 'waiting_agent'
@@ -230,6 +244,7 @@ export const useChatStore = defineStore('chat', () => {
       }
     } finally {
       isRestoring.value = false
+      void refreshChatAuthSession()
     }
   }
 
@@ -242,6 +257,7 @@ export const useChatStore = defineStore('chat', () => {
     presetQuestions.value = []
     isTyping.value = false
     isLoadingPresets.value = false
+    isLoggedInForChat.value = false
   }
 
   async function startNewChat() {
@@ -279,6 +295,7 @@ export const useChatStore = defineStore('chat', () => {
   function toggleChat() {
     isOpen.value = !isOpen.value
     if (isOpen.value) {
+      void refreshChatAuthSession()
       if (messages.value.length === 0 && !isRestoring.value) {
         addGreeting()
         void loadPresets()
@@ -324,7 +341,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const baseUrl = getApiBaseUrl()
       const res = await axios.get<PresetQuestion[]>(`${baseUrl}/api/v1/chat/presets`)
-      presetQuestions.value = ensurePromotionPresetChip(res.data)
+      presetQuestions.value = applyPresetChipPolicy(res.data)
       addPresetButtons()
     } catch (e) {
       console.error('Failed to load presets:', e)
@@ -344,7 +361,7 @@ export const useChatStore = defineStore('chat', () => {
 
   function addPresetButtons() {
     if (presetQuestions.value.length > 0) {
-      presetQuestions.value = ensurePromotionPresetChip(presetQuestions.value)
+      presetQuestions.value = applyPresetChipPolicy(presetQuestions.value)
     }
     // Remove any existing preset-buttons message
     messages.value = messages.value.filter((m) => m.type !== 'preset-buttons')
@@ -466,6 +483,10 @@ export const useChatStore = defineStore('chat', () => {
           }
           break
 
+        case 'contact_admin':
+          pushContactAdminOffer(data.answer)
+          break
+
         default:
           messages.value.push({
             id: crypto.randomUUID(),
@@ -505,7 +526,7 @@ export const useChatStore = defineStore('chat', () => {
           text: 'Here are the payment methods we accept. Tap to see more details 💳💵',
           options: [
             {
-              label: 'credit card',
+              label: 'Credit card',
               key: 'credit_card',
               detail: 'We accept major credit cards including Visa and MasterCard.',
             },
@@ -590,6 +611,9 @@ export const useChatStore = defineStore('chat', () => {
               messages.value.push({ id: crypto.randomUUID(), type: 'bot-promotions', promotionCards: data.cards as PromotionCard[], timestamp: Date.now() })
             }
             break
+          case 'contact_admin':
+            pushContactAdminOffer(data.answer)
+            break
           default:
             messages.value.push({ id: crypto.randomUUID(), type: 'bot-text', text: data.answer, timestamp: Date.now() })
         }
@@ -603,6 +627,24 @@ export const useChatStore = defineStore('chat', () => {
       isTyping.value = false
       addPresetButtons()
     }
+  }
+
+  function pushContactAdminOffer(intro?: string | null) {
+    const body =
+      intro?.trim() ||
+      'Would you like to speak with a member of our guest services team? Use the button below to connect.'
+    messages.value.push({
+      id: crypto.randomUUID(),
+      type: 'bot-text',
+      text: body,
+      timestamp: Date.now(),
+    })
+    messages.value.push({
+      id: crypto.randomUUID(),
+      type: 'bot-options',
+      options: [{ label: 'Contact guest services', key: 'contact_admin', detail: '' }],
+      timestamp: Date.now(),
+    })
   }
 
   function pushFallbackMessage() {
@@ -649,6 +691,23 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function requestLiveAgent() {
+    const { getSupabase } = await import('@/lib/supabase')
+    const supabase = getSupabase()
+    const session = await supabase?.auth.getSession()
+    const token = session?.data?.session?.access_token
+    if (!token) {
+      isLoggedInForChat.value = false
+      messages.value.push({
+        id: crypto.randomUUID(),
+        type: 'bot-text',
+        text: 'Please create an account or log in before contacting guest services.',
+        timestamp: Date.now(),
+      })
+      addPresetButtons()
+      return
+    }
+    isLoggedInForChat.value = true
+
     mode.value = 'waiting_agent'
     messages.value.push({
       id: crypto.randomUUID(),
@@ -660,23 +719,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const baseUrl = getApiBaseUrl()
 
-      // Create chat room if not exists
       if (!chatRoomId.value) {
-        const { getSupabase } = await import('@/lib/supabase')
-        const supabase = getSupabase()
-        const session = await supabase?.auth.getSession()
-        const token = session?.data?.session?.access_token
-        if (!token) {
-          messages.value.push({
-            id: crypto.randomUUID(),
-            type: 'bot-text',
-            text: 'Please login first to contact our admin.',
-            timestamp: Date.now(),
-          })
-          mode.value = 'bot'
-          return
-        }
-
         const roomRes = await axios.post(
           `${baseUrl}/api/v1/chat/rooms`,
           {},
@@ -685,16 +728,11 @@ export const useChatStore = defineStore('chat', () => {
         chatRoomId.value = roomRes.data.id
       }
 
-      // Request agent
-      const { getSupabase: getSb } = await import('@/lib/supabase')
-      const sb = getSb()
-      const sess = await sb?.auth.getSession()
-      const tk = sess?.data?.session?.access_token
-      if (tk && chatRoomId.value) {
+      if (chatRoomId.value) {
         await axios.post(
           `${baseUrl}/api/v1/chat/rooms/${chatRoomId.value}/request-agent`,
           {},
-          { headers: { Authorization: `Bearer ${tk}` } },
+          { headers: { Authorization: `Bearer ${token}` } },
         )
       }
     } catch (e) {
@@ -712,6 +750,23 @@ export const useChatStore = defineStore('chat', () => {
   async function sendLiveMessage(text: string) {
     if (!chatRoomId.value || (mode.value !== 'live_chat' && mode.value !== 'waiting_agent')) return
 
+    const { getSupabase } = await import('@/lib/supabase')
+    const supabase = getSupabase()
+    const authSession = await supabase?.auth.getSession()
+    const sendToken = authSession?.data?.session?.access_token
+    if (!sendToken) {
+      isLoggedInForChat.value = false
+      messages.value.push({
+        id: crypto.randomUUID(),
+        type: 'bot-text',
+        text: 'Please create an account or log in to send messages to our team.',
+        timestamp: Date.now(),
+      })
+      mode.value = 'bot'
+      addPresetButtons()
+      return
+    }
+
     messages.value.push({
       id: crypto.randomUUID(),
       type: 'user',
@@ -721,18 +776,11 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       const baseUrl = getApiBaseUrl()
-      const { getSupabase } = await import('@/lib/supabase')
-      const supabase = getSupabase()
-      const session = await supabase?.auth.getSession()
-      const token = session?.data?.session?.access_token
-
-      if (token) {
-        await axios.post(
-          `${baseUrl}/api/v1/chat/rooms/${chatRoomId.value}/messages`,
-          { message: text },
-          { headers: { Authorization: `Bearer ${token}` } },
-        )
-      }
+      await axios.post(
+        `${baseUrl}/api/v1/chat/rooms/${chatRoomId.value}/messages`,
+        { message: text },
+        { headers: { Authorization: `Bearer ${sendToken}` } },
+      )
     } catch (e) {
       console.error('Failed to send message:', e)
     }
@@ -821,6 +869,8 @@ export const useChatStore = defineStore('chat', () => {
     isLoadingPresets,
     hasMessages,
     toggleChat,
+    isLoggedInForChat,
+    refreshChatAuthSession,
     loadPresets,
     handlePresetClick,
     handleFreeText,

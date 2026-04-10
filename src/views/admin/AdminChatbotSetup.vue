@@ -1,7 +1,72 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue"
+import { computed, nextTick, onMounted, reactive, ref } from "vue"
+import axios from "axios"
 import { Pencil, Plus, RefreshCw, Search, Trash2, X } from "lucide-vue-next"
 import { api } from "@/lib/api"
+
+function extractApiErrorMessage(e: unknown): string | null {
+  if (!axios.isAxiosError(e) || !e.response?.data) return null
+  const status = e.response.status
+  const d = e.response.data as Record<string, unknown>
+  if (typeof d.error === "string" && d.error.trim() && d.message === undefined) {
+    return d.error.trim()
+  }
+  if (typeof d.message === "string" && d.message.trim()) {
+    return d.message.trim()
+  }
+  if (typeof d.error === "string" && d.error.trim()) {
+    return d.error.trim()
+  }
+  if (status === 403) {
+    return "Admin access required. Sign in with an admin account."
+  }
+  if (status === 401) {
+    return "Session expired or not signed in. Please sign in again."
+  }
+  return null
+}
+
+function normalizeSortOrder(v: unknown): number {
+  const n = typeof v === "number" ? v : Number(v)
+  if (!Number.isFinite(n)) return 0
+  return Math.max(0, Math.floor(n))
+}
+
+function asObjectRecord(v: unknown): Record<string, unknown> {
+  return v !== null && typeof v === "object" ? (v as Record<string, unknown>) : {}
+}
+
+/** API may use camelCase or snake_case; missing shortcut flag defaults to true (matches DB default). */
+function pickShowInChat(r: Record<string, unknown>): boolean {
+  const v = r.showInChat ?? r.show_in_chat
+  if (v === false || v === "false" || v === 0) return false
+  return true
+}
+
+function pickActive(r: Record<string, unknown>): boolean {
+  const v = r.active ?? r.is_active
+  if (v === false || v === "false" || v === 0) return false
+  return true
+}
+
+function normalizeFaqPresetApiRow(raw: unknown): FaqPresetRow {
+  const r = asObjectRecord(raw)
+  const kwRaw = r.keywords
+  const keywords = Array.isArray(kwRaw) ? kwRaw.map((x) => String(x)) : []
+  const sortRaw = r.sortOrder ?? r.sort_order
+  const rtRaw = r.responseType ?? r.response_type
+  return {
+    id: r.id != null ? String(r.id) : "",
+    question: typeof r.question === "string" ? r.question : "",
+    answer: typeof r.answer === "string" ? r.answer : "",
+    keywords,
+    active: pickActive(r),
+    showInChat: pickShowInChat(r),
+    category: typeof r.category === "string" ? r.category : "general",
+    sortOrder: normalizeSortOrder(sortRaw),
+    responseType: typeof rtRaw === "string" ? rtRaw : "text",
+  }
+}
 
 interface ChatbotDefaults {
   greeting: string
@@ -14,6 +79,7 @@ interface FaqPresetRow {
   answer: string
   keywords: string[]
   active: boolean
+  showInChat: boolean
   category: string
   sortOrder: number
   responseType: string
@@ -26,6 +92,7 @@ interface FaqWriteBody {
   responseType: string
   sortOrder: number
   active: boolean
+  showInChat: boolean
 }
 
 const responseTypeOptions: { value: string; label: string }[] = [
@@ -33,6 +100,7 @@ const responseTypeOptions: { value: string; label: string }[] = [
   { value: "room_cards", label: "Room cards" },
   { value: "options", label: "Payment options" },
   { value: "promotion_cards", label: "Promotions" },
+  { value: "contact_admin", label: "Contact admin (button)" },
 ]
 
 const greetingMessage = ref("")
@@ -49,14 +117,22 @@ const showPresetForm = ref(false)
 const presetFormPanel = ref<HTMLElement | null>(null)
 const keywordDraftInput = ref("")
 const editingId = ref<string | null>(null)
-const form = ref<FaqWriteBody>({
+/** reactive (not ref) so v-model on form fields stays in sync with savePreset reads */
+const form = reactive<FaqWriteBody>({
   question: "",
   answer: "",
   keywords: [],
   responseType: "text",
   sortOrder: 0,
   active: true,
+  showInChat: true,
 })
+
+function readCheckboxById(id: string): boolean | null {
+  const el = document.getElementById(id)
+  if (el instanceof HTMLInputElement && el.type === "checkbox") return el.checked
+  return null
+}
 
 const filteredPresets = computed(() => {
   const q = tableFilter.value.trim().toLowerCase()
@@ -83,10 +159,12 @@ async function loadAll() {
     ])
     greetingMessage.value = settingsRes.data.greeting ?? ""
     autoReplyMessage.value = settingsRes.data.autoReply ?? ""
-    presets.value = presetsRes.data
+    const rawList = presetsRes.data
+    presets.value = Array.isArray(rawList) ? rawList.map(normalizeFaqPresetApiRow) : []
   } catch (e) {
     console.error(e)
     loadError.value =
+      extractApiErrorMessage(e) ??
       "Could not load data. Check admin login and that the backend is running."
   } finally {
     isLoading.value = false
@@ -103,7 +181,7 @@ async function saveSettings() {
     })
   } catch (e) {
     console.error(e)
-    loadError.value = "Could not save default messages."
+    loadError.value = extractApiErrorMessage(e) ?? "Could not save default messages."
   } finally {
     isSavingSettings.value = false
   }
@@ -119,14 +197,15 @@ async function openCreateForm() {
   editingId.value = null
   const nextOrder =
     presets.value.reduce((m, r) => Math.max(m, r.sortOrder ?? 0), 0) + 1
-  form.value = {
+  Object.assign(form, {
     question: "",
     answer: "",
     keywords: [],
     responseType: "text",
     sortOrder: nextOrder,
     active: true,
-  }
+    showInChat: true,
+  })
   keywordDraftInput.value = ""
   showPresetForm.value = true
   await nextTick()
@@ -135,14 +214,15 @@ async function openCreateForm() {
 
 async function openEditForm(row: FaqPresetRow) {
   editingId.value = row.id
-  form.value = {
+  Object.assign(form, {
     question: row.question,
     answer: row.answer,
     keywords: [...row.keywords],
     responseType: row.responseType,
     sortOrder: row.sortOrder,
     active: row.active,
-  }
+    showInChat: row.showInChat,
+  })
   keywordDraftInput.value = ""
   showPresetForm.value = true
   await nextTick()
@@ -157,29 +237,32 @@ function closePresetForm() {
 
 function addKeywordTag() {
   const v = keywordDraftInput.value.trim().toLowerCase()
-  if (v && !form.value.keywords.includes(v)) form.value.keywords.push(v)
+  if (v && !form.keywords.includes(v)) form.keywords.push(v)
   keywordDraftInput.value = ""
 }
 
 function removeKeywordTag(i: number) {
-  form.value.keywords.splice(i, 1)
+  form.keywords.splice(i, 1)
 }
 
 async function savePreset() {
-  if (!form.value.question.trim()) {
+  if (!form.question.trim()) {
     loadError.value = "Please enter a topic."
     return
   }
   isSavingPreset.value = true
   loadError.value = null
   try {
+    const active = readCheckboxById("fm-active") ?? form.active === true
+    const showInChat = readCheckboxById("fm-show-chip") ?? form.showInChat === true
     const body: FaqWriteBody = {
-      question: form.value.question.trim(),
-      answer: form.value.answer,
-      keywords: [...form.value.keywords],
-      responseType: form.value.responseType,
-      sortOrder: form.value.sortOrder,
-      active: form.value.active,
+      question: form.question.trim(),
+      answer: form.answer,
+      keywords: [...form.keywords],
+      responseType: form.responseType,
+      sortOrder: normalizeSortOrder(form.sortOrder),
+      active,
+      showInChat,
     }
     if (editingId.value) {
       await api.put(`/api/v1/admin/chatbot/presets/${editingId.value}`, body)
@@ -190,7 +273,7 @@ async function savePreset() {
     await loadAll()
   } catch (e) {
     console.error(e)
-    loadError.value = "Could not save preset."
+    loadError.value = extractApiErrorMessage(e) ?? "Could not save preset."
   } finally {
     isSavingPreset.value = false
   }
@@ -206,7 +289,7 @@ async function deletePreset(id: string) {
     await loadAll()
   } catch (e) {
     console.error(e)
-    loadError.value = "Could not delete preset."
+    loadError.value = extractApiErrorMessage(e) ?? "Could not delete preset."
   } finally {
     isDeletingId.value = null
   }
@@ -344,6 +427,15 @@ onMounted(() => {
                 rows="4"
                 class="body-1 w-full resize-none rounded border border-gray-400 bg-white px-3 py-2 text-gray-900 outline-none focus:border-gray-600"
               />
+              <p
+                v-if="form.responseType === 'contact_admin'"
+                class="body-2 text-gray-600"
+              >
+                Shown above the “Contact guest services” button. Add keywords (e.g.
+                <span class="font-medium text-gray-800">admin</span>,
+                <span class="font-medium text-gray-800">manager</span>) so matching
+                free-text questions open this flow.
+              </p>
             </fieldset>
 
             <fieldset class="flex flex-col gap-1">
@@ -389,8 +481,8 @@ onMounted(() => {
               </select>
             </fieldset>
 
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
-              <fieldset class="flex flex-1 flex-col gap-1">
+            <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+              <fieldset class="flex flex-1 flex-col gap-1 sm:min-w-[140px]">
                 <label class="body-2 text-gray-800" for="fm-order">Display order</label>
                 <input
                   id="fm-order"
@@ -407,7 +499,18 @@ onMounted(() => {
                   type="checkbox"
                   class="size-4 rounded border-gray-400"
                 />
-                <label class="body-2 text-gray-800" for="fm-active">Visible in chatbot</label>
+                <label class="body-2 text-gray-800" for="fm-active">Active</label>
+              </fieldset>
+              <fieldset class="flex max-w-md flex-col gap-1 pb-2 sm:pb-0">
+                <div class="flex items-center gap-2">
+                  <input
+                    id="fm-show-chip"
+                    v-model="form.showInChat"
+                    type="checkbox"
+                    class="size-4 rounded border-gray-400"
+                  />
+                  <label class="body-2 text-gray-800" for="fm-show-chip">Show in chat shortcuts</label>
+                </div>
               </fieldset>
             </div>
 
@@ -455,15 +558,18 @@ onMounted(() => {
                   Response type
                 </th>
                 <th class="body-2 whitespace-nowrap px-4 py-3 font-semibold text-gray-800">Active</th>
+                <th class="body-2 whitespace-nowrap px-4 py-3 font-semibold text-gray-800">
+                  Chat shortcuts
+                </th>
                 <th class="body-2 whitespace-nowrap px-4 py-3 font-semibold text-gray-800">Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="isLoading && !presets.length">
-                <td colspan="6" class="body-1 px-4 py-10 text-center text-gray-600">Loading…</td>
+                <td colspan="7" class="body-1 px-4 py-10 text-center text-gray-600">Loading…</td>
               </tr>
               <tr v-else-if="!filteredPresets.length">
-                <td colspan="6" class="body-1 px-4 py-10 text-center text-gray-600">
+                <td colspan="7" class="body-1 px-4 py-10 text-center text-gray-600">
                   {{
                     presets.length
                       ? "No rows match your search."
@@ -476,6 +582,7 @@ onMounted(() => {
                 v-else
                 :key="row.id"
                 class="border-b border-gray-100 hover:bg-gray-50/80"
+                :class="{ 'preset-row-chat-hidden': !row.showInChat }"
               >
                 <td class="body-1 whitespace-nowrap px-4 py-3 text-gray-800">{{ row.sortOrder }}</td>
                 <td class="body-1 max-w-[220px] px-4 py-3 text-gray-900">
@@ -494,6 +601,16 @@ onMounted(() => {
                     :class="row.active ? 'bg-green-100 text-green-900' : 'bg-gray-200 text-gray-600'"
                   >
                     {{ row.active ? "On" : "Off" }}
+                  </span>
+                </td>
+                <td class="body-2 px-4 py-3">
+                  <span
+                    class="inline-block rounded-full px-2.5 py-0.5 font-medium"
+                    :class="
+                      row.showInChat ? 'bg-sky-100 text-sky-900' : 'bg-gray-200 text-gray-600'
+                    "
+                  >
+                    {{ row.showInChat ? "Shown" : "Hidden" }}
                   </span>
                 </td>
                 <td class="px-4 py-3">
@@ -525,3 +642,9 @@ onMounted(() => {
     </main>
   </section>
 </template>
+
+<style scoped>
+.preset-row-chat-hidden td:not(:last-child) {
+  opacity: 0.72;
+}
+</style>

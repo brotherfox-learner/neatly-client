@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useChatStore, type ChatMsg, type PaymentOption } from '@/stores/chat'
 import ChatBubble from './ChatBubble.vue'
 import PresetButtons from './PresetButtons.vue'
@@ -11,8 +12,15 @@ import TypingIndicator from './TypingIndicator.vue'
 import ContactAdminButton from './ContactAdminButton.vue'
 
 const store = useChatStore()
+const router = useRouter()
+const route = useRoute()
 const messagesContainer = ref<HTMLElement | null>(null)
 const inputMessage = ref('')
+
+function goToLoginFromChat() {
+  if (store.isOpen) store.toggleChat()
+  router.push({ name: 'login', query: { redirect: route.fullPath } })
+}
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -50,6 +58,11 @@ const handleSend = () => {
   if (!text) return
 
   if (store.mode === 'live_chat' || store.mode === 'waiting_agent') {
+    if (!store.isLoggedInForChat) {
+      goToLoginFromChat()
+      inputMessage.value = ''
+      return
+    }
     store.sendLiveMessage(text)
   } else {
     store.handleFreeText(text)
