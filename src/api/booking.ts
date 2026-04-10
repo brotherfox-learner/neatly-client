@@ -1,6 +1,9 @@
 import { api } from '@/lib/api'
 import type { ExtraService } from '@/stores/booking'
 
+export type PricingType = 'per_day' | 'per_night' | 'per_stay' | 'per_trip'
+export type ChargeUnit = 'per_person' | 'per_room'
+
 export interface CreateBookingPayload {
   roomTypeId: string
   roomCount: number

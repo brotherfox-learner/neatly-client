@@ -3,7 +3,8 @@ import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { BriefcaseBusiness, Check } from 'lucide-vue-next'
-import { useBookingStore } from '@/stores/booking'
+import { useBookingStore, calcServicePrice } from '@/stores/booking'
+import type { ExtraService } from '@/stores/booking'
 import { getExtraServices } from '@/api/booking'
 import { useBookingTimer } from '@/composables/useBookingTimer'
 import BookingTimerModal from '@/components/BookingTimerModal.vue'
@@ -35,6 +36,35 @@ const freeServices = computed(() =>
 const paidServices = computed(() =>
   bookingStore.extraServices.filter((s) => s.type?.toUpperCase() !== 'FREE'),
 )
+
+// ── Pricing helpers ───────────────────────────────────────────────────────────
+const nights = bookingStore.totalNights || 2
+const guests = bookingStore.guests || guestCount
+const rooms = bookingStore.roomCount || roomCount
+
+function pricingLabel(service: ExtraService): string {
+  const unit = service.chargeUnit === 'per_person' ? '/person' : '/room'
+  const period =
+    service.pricingType === 'per_day' ? '/day'
+    : service.pricingType === 'per_night' ? '/night'
+    : service.pricingType === 'per_trip' ? '/trip'
+    : '/stay'
+  return `+THB ${service.price.toLocaleString()}${unit}${period}`
+}
+
+function serviceTotal(service: ExtraService): number {
+  return calcServicePrice(service, nights, guests, rooms)
+}
+
+function serviceBreakdown(service: ExtraService): string {
+  const parts: string[] = []
+  if (service.pricingType === 'per_day' || service.pricingType === 'per_night') {
+    parts.push(`×${nights} nights`)
+  }
+  if (service.chargeUnit === 'per_person') parts.push(`×${guests} guests`)
+  else parts.push(`×${rooms} room${rooms > 1 ? 's' : ''}`)
+  return parts.join(' ')
+}
 
 // ── Toggle (both FREE and PAID use same selectedExtraIds) ─────────────────────
 const toggleService = (id: string) => {
@@ -154,7 +184,7 @@ const handleBack = () => {
                 class="body-1 transition-colors"
                 :class="bookingStore.selectedExtraIds.includes(service.id) ? 'text-gray-900 font-medium' : 'text-gray-700 group-hover:text-orange-500'"
               >
-                {{ service.name }} (+THB {{ service.price.toLocaleString() }})
+                {{ service.name }} ({{ pricingLabel(service) }})
               </span>
             </label>
           </div>
@@ -226,14 +256,17 @@ const handleBack = () => {
                   <span class="body-1 font-semibold!">0.00</span>
                 </div>
 
-                <!-- Special requests (PAID) — with price -->
+                <!-- Special requests (PAID) — calculated price + breakdown -->
                 <div
                   v-for="service in selectedPaidForSummary"
                   :key="service.id"
                   class="flex justify-between py-[12px]"
                 >
-                  <span class="body-1 text-green-300">{{ service.name }}</span>
-                  <span class="body-1 font-semibold!">{{ service.price.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+                  <div class="flex flex-col">
+                    <span class="body-1 text-green-300">{{ service.name }}</span>
+                    <span class="text-xs text-green-400">{{ serviceBreakdown(service) }}</span>
+                  </div>
+                  <span class="body-1 font-semibold!">{{ serviceTotal(service).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
                 </div>
               </div>
 

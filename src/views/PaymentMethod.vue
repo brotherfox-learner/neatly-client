@@ -6,8 +6,9 @@ import { CreditCardIcon, BanknotesIcon } from '@heroicons/vue/24/outline'
 import { HandCash } from '@iconoir/vue'
 import { BriefcaseBusiness } from 'lucide-vue-next'
 import { loadStripe } from '@stripe/stripe-js'
-import type { Stripe, StripeCardElement } from '@stripe/stripe-js'
-import { useBookingStore } from '@/stores/booking'
+import type { Stripe, StripeCardNumberElement } from '@stripe/stripe-js'
+import { useBookingStore, calcServicePrice } from '@/stores/booking'
+import type { ExtraService } from '@/stores/booking'
 import { createBooking, createPaymentIntent, validatePromoCode, updatePaymentStatus } from '@/api/booking'
 import { useBookingTimer } from '@/composables/useBookingTimer'
 import BookingTimerModal from '@/components/BookingTimerModal.vue'
@@ -30,33 +31,45 @@ const formatDate = (iso: string) =>
 type PaymentMethod = 'card' | 'cash'
 const selectedMethod = ref<PaymentMethod>('card')
 
-// ── Stripe Elements ───────────────────────────────────────────────────────────
+// ── Retry state — ดึงจาก store แล้ว reset ทันที ────────────────────────────
+const isRetrying = ref(bookingStore.isRetrying)
+bookingStore.isRetrying = false
+
+// ── Stripe split elements ─────────────────────────────────────────────────────
 let stripeInstance: Stripe | null = null
-let cardElement: StripeCardElement | null = null
+let cardNumberEl: StripeCardNumberElement | null = null
+const cardOwner = ref('')
 const stripeError = ref('')
+
+const elStyle = {
+  base: { fontSize: '16px', color: '#1a1d26', '::placeholder': { color: '#9AA1B9' } },
+}
 
 onMounted(async () => {
   stripeInstance = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
   if (!stripeInstance) return
   const elements = stripeInstance.elements()
-  cardElement = elements.create('card', {
-    hidePostalCode: true,
-    style: {
-      base: {
-        fontSize: '16px',
-        color: '#1a1d26',
-        '::placeholder': { color: '#9AA1B9' },
-      },
-    },
-  })
-  cardElement.mount('#stripe-card-element')
-  cardElement.on('change', (event) => {
-    stripeError.value = event.error ? event.error.message : ''
-  })
+
+  cardNumberEl = elements.create('cardNumber', { style: elStyle, showIcon: true })
+  cardNumberEl.mount('#stripe-card-number')
+  cardNumberEl.on('change', (e) => { stripeError.value = e.error?.message ?? '' })
+
+  const cardExpiryEl = elements.create('cardExpiry', { style: elStyle })
+  cardExpiryEl.mount('#stripe-card-expiry')
+
+  const cardCvcEl = elements.create('cardCvc', { style: elStyle })
+  cardCvcEl.mount('#stripe-card-cvc')
+
+  // ถ้ามาจาก Retry และมี pm_xxx → auto-confirm ด้วยบัตรเดิมได้เลย
+  if (isRetrying.value && bookingStore.savedPaymentMethodId) {
+    setTimeout(() => handleConfirm().finally(() => { isRetrying.value = false }), 0)
+  } else {
+    isRetrying.value = false
+  }
 })
 
 onUnmounted(() => {
-  cardElement?.destroy()
+  cardNumberEl?.destroy()
 })
 
 // ── Promo code ────────────────────────────────────────────────────────────────
@@ -85,6 +98,20 @@ const applyPromo = async () => {
 
 // ── Summary ───────────────────────────────────────────────────────────────────
 const selectedExtras = computed(() => bookingStore.selectedExtras)
+
+function serviceTotal(service: ExtraService): number {
+  return calcServicePrice(service, bookingStore.totalNights, bookingStore.guests, bookingStore.roomCount)
+}
+
+function serviceBreakdown(service: ExtraService): string {
+  const parts: string[] = []
+  if (service.pricingType === 'per_day' || service.pricingType === 'per_night') {
+    parts.push(`×${bookingStore.totalNights} nights`)
+  }
+  if (service.chargeUnit === 'per_person') parts.push(`×${bookingStore.guests} guests`)
+  else parts.push(`×${bookingStore.roomCount} room${bookingStore.roomCount > 1 ? 's' : ''}`)
+  return parts.join(' ')
+}
 
 // ── Loading state ─────────────────────────────────────────────────────────────
 const isSubmitting = ref(false)
@@ -122,18 +149,38 @@ const handleConfirm = async () => {
     }
 
     // ── Card flow via Stripe ───────────────────────────────────────────────
-    if (!stripeInstance || !cardElement) {
+    if (!stripeInstance) {
+      stripeError.value = 'Stripe is not ready. Please refresh and try again.'
+      return
+    }
+
+    if (!cardNumberEl) {
       stripeError.value = 'Stripe is not ready. Please refresh and try again.'
       return
     }
 
     const { clientSecret } = await createPaymentIntent({ bookingId: bookingStore.bookingId! })
 
-    const { error: stripeConfirmError } = await stripeInstance.confirmCardPayment(clientSecret, {
-      payment_method: { card: cardElement },
-    })
+    const paymentMethodParam = bookingStore.savedPaymentMethodId
+      ? { payment_method: bookingStore.savedPaymentMethodId }
+      : {
+          payment_method: {
+            card: cardNumberEl,
+            billing_details: { name: cardOwner.value },
+          },
+        }
+
+    const { error: stripeConfirmError, paymentIntent } = await stripeInstance.confirmCardPayment(
+      clientSecret,
+      paymentMethodParam,
+    )
 
     if (stripeConfirmError) {
+      // เก็บ pm_xxx ไว้ใช้ตอน retry (ถ้า Stripe ออกให้แล้ว)
+      const pm = paymentIntent?.payment_method
+      if (pm) {
+        bookingStore.savedPaymentMethodId = typeof pm === 'string' ? pm : pm.id
+      }
       stripeError.value = stripeConfirmError.message ?? 'Payment failed'
       await updatePaymentStatus(bookingStore.bookingId!, 'FAILED').catch(() => {})
       router.push('/payment-fail')
@@ -157,6 +204,21 @@ const handleBack = () => {
 
 <template>
   <BookingTimerModal :open="isExpiredModalOpen" @extend="extendTimer" />
+
+  <!-- Retry Payment Loading Overlay -->
+  <Transition name="fade">
+    <div
+      v-if="isRetrying"
+      class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm gap-6"
+    >
+      <div class="w-14 h-14 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+      <div class="flex flex-col items-center gap-2 text-center">
+        <p class="headline-5 text-gray-800">Processing your payment...</p>
+        <p class="body-2 text-gray-500">Please do not close this window</p>
+      </div>
+    </div>
+  </Transition>
+
   <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:py-[80px]">
     <!-- ===== HEADER ===== -->
     <div class="flex flex-col gap-6 py-[24px] px-[16px] bg-[#f7f7fb] lg:gap-10 lg:p-0">
@@ -217,14 +279,31 @@ const handleBack = () => {
         <div v-show="selectedMethod === 'card'" class="flex flex-col gap-6 lg:gap-10">
           <h2 class="headline-5 text-gray-600 lg:text-gray-800">Credit Card</h2>
 
+          <!-- Card Number -->
           <div class="flex flex-col gap-1">
-            <label class="body-1 text-gray-900">Card Details</label>
-            <div
-              id="stripe-card-element"
-              class="border border-gray-400 rounded-sm p-3 bg-white"
-            />
-            <span v-if="stripeError" class="text-red-500 text-sm">{{ stripeError }}</span>
+            <label class="body-1 text-gray-900">Card Number</label>
+            <div id="stripe-card-number" class="border border-gray-400 rounded-sm p-3 bg-white" />
           </div>
+
+          <!-- Card Owner -->
+          <div class="flex flex-col gap-1">
+            <label class="body-1 text-gray-900">Card Owner</label>
+            <input v-model="cardOwner" class="border border-gray-400 rounded-sm p-3" placeholder="Name on card" />
+          </div>
+
+          <!-- Expiry + CVV -->
+          <div class="flex gap-10">
+            <div class="flex flex-col gap-1 flex-1">
+              <label class="body-1 text-gray-900">Expiry</label>
+              <div id="stripe-card-expiry" class="border border-gray-400 rounded-sm p-3 bg-white" />
+            </div>
+            <div class="flex flex-col gap-1 flex-1">
+              <label class="body-1 text-gray-900">CVV</label>
+              <div id="stripe-card-cvc" class="border border-gray-400 rounded-sm p-3 bg-white" />
+            </div>
+          </div>
+
+          <span v-if="stripeError" class="text-red-500 text-sm">{{ stripeError }}</span>
 
           <!-- PROMO -->
           <div class="border-t py-6">
@@ -310,8 +389,13 @@ const handleBack = () => {
                   <span class="body-1 font-semibold!">{{ bookingStore.roomSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
                 </div>
                 <div v-for="extra in selectedExtras" :key="extra.id" class="flex justify-between py-[12px]">
-                  <span class="body-1 text-green-300">{{ extra.name }}</span>
-                  <span class="body-1 font-semibold!">{{ extra.price.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+                  <div class="flex flex-col">
+                    <span class="body-1 text-green-300">{{ extra.name }}</span>
+                    <span v-if="extra.type?.toUpperCase() !== 'FREE'" class="text-xs text-green-400">{{ serviceBreakdown(extra) }}</span>
+                  </div>
+                  <span class="body-1 font-semibold!">
+                    {{ extra.type?.toUpperCase() === 'FREE' ? '0.00' : serviceTotal(extra).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}
+                  </span>
                 </div>
                 <div v-if="bookingStore.discountAmount > 0" class="flex justify-between py-[12px]">
                   <span class="body-1 text-green-300">Promo ({{ bookingStore.promoCode }})</span>
@@ -350,3 +434,14 @@ const handleBack = () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

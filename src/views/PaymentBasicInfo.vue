@@ -53,6 +53,9 @@ onMounted(() => {
     firstName.value = authStore.user.firstName ?? ''
     lastName.value = authStore.user.lastName ?? ''
     email.value = authStore.user.email ?? ''
+    phone.value = authStore.user.phone ?? ''
+    dateOfBirth.value = authStore.user.dateOfBirth ?? ''
+    country.value = authStore.user.country ?? ''
   }
   // ถ้า step เคยกรอกแล้ว ให้เติมกลับมา
   if (bookingStore.guestInfo.firstName) {

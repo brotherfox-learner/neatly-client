@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
-import { useBookingStore } from '@/stores/booking'
+import { useBookingStore, calcServicePrice } from '@/stores/booking'
+import type { ExtraService } from '@/stores/booking'
 
 const router = useRouter()
 const bookingStore = useBookingStore()
@@ -15,6 +16,9 @@ const guestCount = bookingStore.guests || 2
 const roomCount = bookingStore.roomCount || 1
 const roomTypeName = bookingStore.roomTypeName || 'Superior Garden View'
 const paymentMethod = bookingStore.paymentMethod
+
+const serviceTotal = (extra: ExtraService) =>
+  calcServicePrice(extra, bookingStore.totalNights, bookingStore.guests, bookingStore.roomCount)
 
 const handleBackToHome = () => {
   bookingStore.reset()
@@ -75,7 +79,9 @@ const handleBackToHome = () => {
 
         <div v-for="extra in bookingStore.selectedExtras" :key="extra.id" class="flex justify-between py-3">
           <span class="text-green-300">{{ extra.name }}</span>
-          <span class="body-1 font-semibold!">{{ extra.price.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+          <span class="body-1 font-semibold!">
+            {{ extra.type?.toUpperCase() === 'FREE' ? '0.00' : serviceTotal(extra).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}
+          </span>
         </div>
 
         <div v-if="bookingStore.discountAmount > 0" class="flex justify-between py-3">

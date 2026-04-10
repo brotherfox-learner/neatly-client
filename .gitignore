@@ -41,5 +41,5 @@ __screenshots__/
 #env
 .env
 
-docs/
-.claude
+booking-payment-design.md
+schema.md

@@ -2,11 +2,13 @@
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { CircleAlert } from 'lucide-vue-next'
+import { useBookingStore } from '@/stores/booking'
+
 const router = useRouter()
+const bookingStore = useBookingStore()
 
 const handleRetry = () => {
-  // bookingId อาจมีอยู่แล้วถ้า booking สร้างสำเร็จแต่ payment fail
-  // PaymentMethod.vue จะ skip createBooking() ถ้า bookingId มีอยู่แล้ว
+  bookingStore.isRetrying = true
   router.push('/payment-method')
 }
 
