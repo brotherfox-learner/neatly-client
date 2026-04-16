@@ -1,9 +1,5 @@
 <script setup lang="ts">
-<<<<<<< HEAD
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue"
-=======
-import { computed, nextTick, onMounted, reactive, ref } from "vue"
->>>>>>> 926d31c49772788066b2602fc330de9da3294445
 import axios from "axios"
 import { Pencil, Plus, RefreshCw, Search, Trash2, X } from "lucide-vue-next"
 import { api } from "@/lib/api"
@@ -623,57 +619,57 @@ onMounted(() => {
                   class="border-b border-gray-100 hover:bg-gray-50/80"
                   :class="{ 'preset-row-chat-hidden': !row.showInChat }"
                 >
-                <td class="body-1 whitespace-nowrap px-4 py-3 text-gray-800">{{ row.sortOrder }}</td>
-                <td class="body-1 max-w-[220px] px-4 py-3 text-gray-900">
-                  <span class="line-clamp-2">{{ row.question }}</span>
-                </td>
-                <td class="body-2 px-4 py-3 text-gray-700">
-                  <span v-if="!row.keywords.length" class="text-gray-500">—</span>
-                  <span v-else class="line-clamp-2">{{ row.keywords.join(", ") }}</span>
-                </td>
-                <td class="body-2 whitespace-nowrap px-4 py-3 text-gray-800">
-                  {{ labelForResponseType(row.responseType) }}
-                </td>
-                <td class="body-2 px-4 py-3">
-                  <span
-                    class="inline-block rounded-full px-2.5 py-0.5 font-medium"
-                    :class="row.active ? 'bg-green-100 text-green-900' : 'bg-gray-200 text-gray-600'"
-                  >
-                    {{ row.active ? "On" : "Off" }}
-                  </span>
-                </td>
-                <td class="body-2 px-4 py-3">
-                  <span
-                    class="inline-block rounded-full px-2.5 py-0.5 font-medium"
-                    :class="
-                      row.showInChat ? 'bg-sky-100 text-sky-900' : 'bg-gray-200 text-gray-600'
-                    "
-                  >
-                    {{ row.showInChat ? "Shown" : "Hidden" }}
-                  </span>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-1">
-                    <button
-                      type="button"
-                      class="inline-flex size-9 items-center justify-center rounded text-gray-600 hover:bg-gray-200 hover:text-gray-900"
-                      aria-label="Edit"
-                      @click="openEditForm(row)"
+                  <td class="body-1 whitespace-nowrap px-4 py-3 text-gray-800">{{ row.sortOrder }}</td>
+                  <td class="body-1 max-w-[220px] px-4 py-3 text-gray-900">
+                    <span class="line-clamp-2">{{ row.question }}</span>
+                  </td>
+                  <td class="body-2 px-4 py-3 text-gray-700">
+                    <span v-if="!row.keywords.length" class="text-gray-500">—</span>
+                    <span v-else class="line-clamp-2">{{ row.keywords.join(", ") }}</span>
+                  </td>
+                  <td class="body-2 whitespace-nowrap px-4 py-3 text-gray-800">
+                    {{ labelForResponseType(row.responseType) }}
+                  </td>
+                  <td class="body-2 px-4 py-3">
+                    <span
+                      class="inline-block rounded-full px-2.5 py-0.5 font-medium"
+                      :class="row.active ? 'bg-green-100 text-green-900' : 'bg-gray-200 text-gray-600'"
                     >
-                      <Pencil class="size-4" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      class="inline-flex size-9 items-center justify-center rounded text-gray-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
-                      aria-label="Delete"
-                      :disabled="isDeletingId === row.id"
-                      @click="deletePreset(row.id)"
+                      {{ row.active ? "On" : "Off" }}
+                    </span>
+                  </td>
+                  <td class="body-2 px-4 py-3">
+                    <span
+                      class="inline-block rounded-full px-2.5 py-0.5 font-medium"
+                      :class="
+                        row.showInChat ? 'bg-sky-100 text-sky-900' : 'bg-gray-200 text-gray-600'
+                      "
                     >
-                      <Trash2 class="size-4" aria-hidden="true" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                      {{ row.showInChat ? "Shown" : "Hidden" }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-1">
+                      <button
+                        type="button"
+                        class="inline-flex size-9 items-center justify-center rounded text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                        aria-label="Edit"
+                        @click="openEditForm(row)"
+                      >
+                        <Pencil class="size-4" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        class="inline-flex size-9 items-center justify-center rounded text-gray-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+                        aria-label="Delete"
+                        :disabled="isDeletingId === row.id"
+                        @click="deletePreset(row.id)"
+                      >
+                        <Trash2 class="size-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               </template>
             </tbody>
           </table>
@@ -683,6 +679,7 @@ onMounted(() => {
           v-if="filteredPresets.length > 0"
           class="mt-10 flex w-full items-center justify-center gap-2"
           aria-label="Pagination"
+        >
           <button
             type="button"
             class="flex size-8 items-center justify-center rounded-[4px]"
@@ -724,3 +721,8 @@ onMounted(() => {
   </section>
 </template>
 
+<style scoped>
+.preset-row-chat-hidden td:not(:last-child) {
+  opacity: 0.72;
+}
+</style>
