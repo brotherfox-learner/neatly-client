@@ -201,7 +201,7 @@ const meErrorText = computed(() => formatQueryError(unref(meErr)))
           <span class="text-foreground font-mono text-xs">{{ sessionEmail ?? '(has access token)' }}</span>
         </p>
         <div class="mb-3 flex flex-wrap gap-2">
-          <Button type="button" variant="outline" @click="() => signOut()">Sign out</Button>
+          <Button type="button" variant="secondary" @click="() => signOut()">Sign out</Button>
           <Button type="button" @click="() => refetchMe()">Load /me</Button>
         </div>
         <p v-if="mePending" class="text-sm">Loading…</p>

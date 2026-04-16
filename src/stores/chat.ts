@@ -188,6 +188,12 @@ export const useChatStore = defineStore('chat', () => {
       const token = session?.data?.session?.access_token
 
       if (!token) {
+        // Cannot use server chat rooms without auth — drop stale ids from a prior session
+        // or they break "request agent" after the user returns from the login page.
+        chatRoomId.value = null
+        if (mode.value === 'waiting_agent' || mode.value === 'live_chat') {
+          mode.value = 'bot'
+        }
         if (messages.value.length === 0) {
           addGreeting()
           void loadPresets()
@@ -709,12 +715,8 @@ export const useChatStore = defineStore('chat', () => {
     isLoggedInForChat.value = true
 
     mode.value = 'waiting_agent'
-    messages.value.push({
-      id: crypto.randomUUID(),
-      type: 'system',
-      text: 'Connecting you to our team...',
-      timestamp: Date.now(),
-    })
+    // System line is persisted + pushed over WS by the server (LiveChatService.requestAgent).
+    // Do not duplicate it here or users see "Connecting..." twice.
 
     try {
       const baseUrl = getApiBaseUrl()
@@ -737,13 +739,30 @@ export const useChatStore = defineStore('chat', () => {
       }
     } catch (e) {
       console.error('Failed to request agent:', e)
-      messages.value.push({
-        id: crypto.randomUUID(),
-        type: 'bot-text',
-        text: 'Failed to connect. Please try calling us at 029872345.',
-        timestamp: Date.now(),
-      })
-      mode.value = 'bot'
+      // Stale persisted room id (e.g. after login) — create a fresh room once and retry.
+      try {
+        chatRoomId.value = null
+        const roomRes = await axios.post<{ id: string }>(
+          `${getApiBaseUrl()}/api/v1/chat/rooms`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+        chatRoomId.value = roomRes.data.id
+        await axios.post(
+          `${getApiBaseUrl()}/api/v1/chat/rooms/${chatRoomId.value}/request-agent`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+      } catch (e2) {
+        console.error('Failed to request agent (retry):', e2)
+        messages.value.push({
+          id: crypto.randomUUID(),
+          type: 'bot-text',
+          text: 'Failed to connect. Please try calling us at 029872345.',
+          timestamp: Date.now(),
+        })
+        mode.value = 'bot'
+      }
     }
   }
 
@@ -791,8 +810,10 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function onIncomingLiveSystemMessage(msg: { id?: string; message: string }) {
+    const id = msg.id ?? crypto.randomUUID()
+    if (messages.value.some((m) => m.id === id)) return
     messages.value.push({
-      id: msg.id ?? crypto.randomUUID(),
+      id,
       type: 'system',
       text: msg.message,
       timestamp: Date.now(),
@@ -812,11 +833,13 @@ export const useChatStore = defineStore('chat', () => {
     senderAvatarUrl?: string
   }) {
     if (msg.senderType === 'AGENT') {
+      const id = msg.id ?? crypto.randomUUID()
+      if (messages.value.some((m) => m.id === id)) return
       if (mode.value === 'waiting_agent') {
         mode.value = 'live_chat'
       }
       messages.value.push({
-        id: msg.id ?? crypto.randomUUID(),
+        id,
         type: 'agent-text',
         text: msg.message,
         senderName: msg.senderName,

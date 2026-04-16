@@ -40,12 +40,12 @@ export interface CreatePaymentIntentResponse {
 
 // Hardcoded mock สำหรับ fallback เมื่อ API ยังไม่มีข้อมูล
 const MOCK_EXTRA_SERVICES: ExtraService[] = [
-  { id: 'mock-1', name: 'Baby cot', description: 'Baby cot for infant', type: 'SPECIAL', price: 400 },
-  { id: 'mock-2', name: 'Airport transfer', description: 'Pick-up from airport', type: 'SPECIAL', price: 200 },
-  { id: 'mock-3', name: 'Extra bed', description: 'Additional bed in room', type: 'SPECIAL', price: 500 },
-  { id: 'mock-4', name: 'Extra pillows', description: null, type: 'SPECIAL', price: 100 },
-  { id: 'mock-5', name: 'Phone chargers and adapters', description: null, type: 'SPECIAL', price: 100 },
-  { id: 'mock-6', name: 'Breakfast', description: 'Breakfast per person per day', type: 'SPECIAL', price: 150 },
+  { id: 'mock-1', name: 'Baby cot', description: 'Baby cot for infant', type: 'SPECIAL', price: 400, pricingType: 'per_stay', chargeUnit: 'per_room' },
+  { id: 'mock-2', name: 'Airport transfer', description: 'Pick-up from airport', type: 'SPECIAL', price: 200, pricingType: 'per_trip', chargeUnit: 'per_room' },
+  { id: 'mock-3', name: 'Extra bed', description: 'Additional bed in room', type: 'SPECIAL', price: 500, pricingType: 'per_night', chargeUnit: 'per_room' },
+  { id: 'mock-4', name: 'Extra pillows', description: null, type: 'SPECIAL', price: 100, pricingType: 'per_stay', chargeUnit: 'per_room' },
+  { id: 'mock-5', name: 'Phone chargers and adapters', description: null, type: 'SPECIAL', price: 100, pricingType: 'per_stay', chargeUnit: 'per_room' },
+  { id: 'mock-6', name: 'Breakfast', description: 'Breakfast per person per day', type: 'SPECIAL', price: 150, pricingType: 'per_night', chargeUnit: 'per_person' },
 ]
 
 export async function createBooking(payload: CreateBookingPayload): Promise<CreateBookingResponse> {

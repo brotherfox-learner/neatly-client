@@ -17,8 +17,11 @@ onMounted(() => {
   void store.refreshChatAuthSession()
   const sb = getSupabase()
   if (sb) {
-    const { data } = sb.auth.onAuthStateChange(() => {
+    const { data } = sb.auth.onAuthStateChange((event) => {
       void store.refreshChatAuthSession()
+      if (event === 'SIGNED_IN') {
+        void store.tryRestoreFromBrowserSession()
+      }
     })
     unsubscribeAuth = () => data.subscription.unsubscribe()
   }

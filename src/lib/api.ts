@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosHeaders } from 'axios'
 
 import { getApiBaseUrl } from './apiBaseUrl'
 import { getSupabase } from './supabase'
@@ -40,7 +40,7 @@ api.interceptors.request.use(async (config) => {
   const token = sessionResult.data.session?.access_token
   if (token) {
     if (!config.headers) {
-      config.headers = {}
+      config.headers = new AxiosHeaders()
     }
     // If Authorization was already set (e.g. fetchMe(accessToken)), keep it.
     if (!('Authorization' in config.headers)) {

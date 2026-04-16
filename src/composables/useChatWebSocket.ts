@@ -7,17 +7,37 @@ export function useChatWebSocket() {
   const store = useChatStore()
   const stompClient = ref<Client | null>(null)
   const connected = ref(false)
+  let connectSeq = 0
+
+  async function disconnect() {
+    const c = stompClient.value
+    stompClient.value = null
+    connected.value = false
+    if (c) {
+      try {
+        await c.deactivate()
+      } catch {
+        /* ignore */
+      }
+    }
+  }
 
   async function connect() {
-    if (stompClient.value?.connected) return
+    const mode = store.mode
+    if (mode !== 'waiting_agent' && mode !== 'live_chat') return
+
+    const { getSupabase } = await import('@/lib/supabase')
+    const supabase = getSupabase()
+    const session = await supabase?.auth.getSession()
+    const token = session?.data?.session?.access_token
+    if (!token) return
+
+    const seq = ++connectSeq
+    await disconnect()
+
+    if (seq !== connectSeq) return
 
     try {
-      const { getSupabase } = await import('@/lib/supabase')
-      const supabase = getSupabase()
-      const session = await supabase?.auth.getSession()
-      const token = session?.data?.session?.access_token
-      if (!token) return
-
       const wsUrl = getChatWebSocketUrl()
 
       const client = new Client({
@@ -29,9 +49,9 @@ export function useChatWebSocket() {
         heartbeatIncoming: 10000,
         heartbeatOutgoing: 10000,
         onConnect: () => {
+          if (seq !== connectSeq) return
           connected.value = true
 
-          // Spring maps /user/queue/* to the authenticated Principal (JWT sub)
           client.subscribe('/user/queue/chat', (message) => {
             try {
               const data = JSON.parse(message.body) as {
@@ -83,25 +103,28 @@ export function useChatWebSocket() {
         },
       })
 
-      client.activate()
       stompClient.value = client
+      client.activate()
     } catch (e) {
       console.error('WebSocket connection failed:', e)
     }
   }
 
-  function disconnect() {
-    if (stompClient.value) {
-      stompClient.value.deactivate()
-      stompClient.value = null
-      connected.value = false
-    }
-  }
+  /** One "bucket" for waiting + live so agent join (mode change) does not reconnect STOMP. */
+  const liveSocketKey = () =>
+    store.mode === 'waiting_agent' || store.mode === 'live_chat' ? 'on' : 'off'
 
   watch(
-    () => store.mode,
-    (newMode) => {
-      if (newMode === 'waiting_agent' || newMode === 'live_chat') {
+    () => [liveSocketKey(), store.isLoggedInForChat] as const,
+    ([socketOn, loggedIn], prev) => {
+      if (socketOn === 'off' || !loggedIn) {
+        connectSeq += 1
+        void disconnect()
+        return
+      }
+      const wasOff = !prev || prev[0] === 'off' || prev[1] === false
+      if (wasOff || !stompClient.value?.connected) {
+        connectSeq += 1
         void connect()
       }
     },
@@ -109,7 +132,8 @@ export function useChatWebSocket() {
   )
 
   onUnmounted(() => {
-    disconnect()
+    connectSeq += 1
+    void disconnect()
   })
 
   return {
