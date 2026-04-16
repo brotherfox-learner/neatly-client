@@ -1,5 +1,9 @@
 <script setup lang="ts">
+<<<<<<< HEAD
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue"
+=======
+import { computed, nextTick, onMounted, reactive, ref } from "vue"
+>>>>>>> 926d31c49772788066b2602fc330de9da3294445
 import axios from "axios"
 import { Pencil, Plus, RefreshCw, Search, Trash2, X } from "lucide-vue-next"
 import { api } from "@/lib/api"
@@ -679,7 +683,6 @@ onMounted(() => {
           v-if="filteredPresets.length > 0"
           class="mt-10 flex w-full items-center justify-center gap-2"
           aria-label="Pagination"
-        >
           <button
             type="button"
             class="flex size-8 items-center justify-center rounded-[4px]"
@@ -721,8 +724,3 @@ onMounted(() => {
   </section>
 </template>
 
-<style scoped>
-.preset-row-chat-hidden td:not(:last-child) {
-  opacity: 0.72;
-}
-</style>
