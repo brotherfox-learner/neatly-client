@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import { Search } from "lucide-vue-next"
 
-defineProps<{
+withDefaults(defineProps<{
   title: string
+  searchValue?: string
+  searchPlaceholder?: string
+}>(), {
+  searchValue: "",
+  searchPlaceholder: "Search...",
+})
+
+const emit = defineEmits<{
+  (event: "update:searchValue", value: string): void
 }>()
 </script>
 
@@ -22,8 +31,10 @@ defineProps<{
         <input
           id="admin-search"
           type="search"
-          placeholder="Search..."
+          :value="searchValue"
+          :placeholder="searchPlaceholder"
           class="body-1 min-w-0 flex-1 border-0 bg-transparent p-0 text-[#2A2E3F] outline-none placeholder:text-[#9AA1B9]"
+          @input="emit('update:searchValue', ($event.target as HTMLInputElement).value)"
         />
       </div>
     </div>

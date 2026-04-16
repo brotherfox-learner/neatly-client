@@ -39,6 +39,12 @@ const rows: BookingRow[] = Array.from({ length: 10 }, (_, i) => {
 
 const selected = ref<BookingRow | null>(null)
 const isDetailView = computed(() => selected.value !== null)
+const searchCustomer = ref("")
+const filteredRows = computed(() => {
+  const keyword = searchCustomer.value.trim().toLowerCase()
+  if (!keyword) return rows
+  return rows.filter((row) => row.customer.toLowerCase().includes(keyword))
+})
 
 function openDetail(row: BookingRow) {
   selected.value = row
@@ -71,7 +77,12 @@ const detail = computed(() => {
 <template>
   <section class="flex min-h-0 flex-1 flex-col bg-[#F6F7FC]">
     <template v-if="!isDetailView">
-      <AdminPageHeader title="Customer Booking" />
+      <AdminPageHeader
+        title="Customer Booking"
+        :search-value="searchCustomer"
+        search-placeholder="Search customer name"
+        @update:search-value="searchCustomer = $event"
+      />
 
       <main class="flex min-h-0 flex-1 flex-col px-4 py-8 sm:px-8 lg:px-[60px] lg:pt-12 lg:pb-16">
         <article class="overflow-x-auto rounded-[4px] border border-transparent bg-transparent">
@@ -104,7 +115,7 @@ const detail = computed(() => {
 
             <tbody>
               <tr
-                v-for="(row, index) in rows"
+                v-for="(row, index) in filteredRows"
                 :key="index"
                 class="cursor-pointer border-b border-[#E4E6ED] bg-white transition-colors hover:bg-[#F6F7FC]"
                 @click="openDetail(row)"
@@ -116,6 +127,9 @@ const detail = computed(() => {
                 <td class="body-1 px-4 py-6 text-black">{{ row.bed }}</td>
                 <td class="body-1 px-4 py-6 text-black">{{ row.checkIn }}</td>
                 <td class="body-1 px-4 py-6 text-black">{{ row.checkOut }}</td>
+              </tr>
+              <tr v-if="filteredRows.length === 0" class="border-b border-[#E4E6ED] bg-white">
+                <td class="body-1 px-4 py-8 text-[#9AA1B9]" colspan="7">No customer found.</td>
               </tr>
             </tbody>
           </table>

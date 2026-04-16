@@ -8,6 +8,9 @@ export const userResponseSchema = z.object({
   active: z.boolean(),
   firstName: z.string().nullable().optional(),
   lastName: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  dateOfBirth: z.string().nullable().optional(),
   avatarUrl: z.string().nullable().optional(),
 })
 
