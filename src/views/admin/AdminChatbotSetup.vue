@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref } from "vue"
+import { computed, nextTick, onMounted, reactive, ref, watch } from "vue"
 import axios from "axios"
 import { Pencil, Plus, RefreshCw, Search, Trash2, X } from "lucide-vue-next"
 import { api } from "@/lib/api"
@@ -143,6 +143,41 @@ const filteredPresets = computed(() => {
     const inAnswer = row.answer.toLowerCase().includes(q)
     return inTopic || inKw || inAnswer
   })
+})
+
+const PAGE_SIZE = 5
+const currentPage = ref(1)
+
+watch(tableFilter, () => {
+  currentPage.value = 1
+})
+
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(filteredPresets.value.length / PAGE_SIZE)),
+)
+
+watch(totalPages, (tp) => {
+  if (currentPage.value > tp) currentPage.value = tp
+})
+
+const paginatedPresets = computed(() => {
+  const list = filteredPresets.value
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return list.slice(start, start + PAGE_SIZE)
+})
+
+/** Up to 5 page tabs, aligned with other admin pagination */
+const visiblePageNumbers = computed(() => {
+  const total = totalPages.value
+  const cur = currentPage.value
+  const windowSize = 5
+  if (total <= windowSize) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  let start = Math.max(1, cur - Math.floor(windowSize / 2))
+  let end = Math.min(total, start + windowSize - 1)
+  start = Math.max(1, end - windowSize + 1)
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
 })
 
 function labelForResponseType(value: string) {
@@ -577,13 +612,13 @@ onMounted(() => {
                   }}
                 </td>
               </tr>
-              <tr
-                v-for="row in filteredPresets"
-                v-else
-                :key="row.id"
-                class="border-b border-gray-100 hover:bg-gray-50/80"
-                :class="{ 'preset-row-chat-hidden': !row.showInChat }"
-              >
+              <template v-else>
+                <tr
+                  v-for="row in paginatedPresets"
+                  :key="row.id"
+                  class="border-b border-gray-100 hover:bg-gray-50/80"
+                  :class="{ 'preset-row-chat-hidden': !row.showInChat }"
+                >
                 <td class="body-1 whitespace-nowrap px-4 py-3 text-gray-800">{{ row.sortOrder }}</td>
                 <td class="body-1 max-w-[220px] px-4 py-3 text-gray-900">
                   <span class="line-clamp-2">{{ row.question }}</span>
@@ -635,9 +670,52 @@ onMounted(() => {
                   </div>
                 </td>
               </tr>
+              </template>
             </tbody>
           </table>
         </div>
+
+        <nav
+          v-if="filteredPresets.length > 0"
+          class="mt-10 flex w-full items-center justify-center gap-2"
+          aria-label="Pagination"
+        >
+          <button
+            type="button"
+            class="flex size-8 items-center justify-center rounded-[4px]"
+            :class="currentPage === 1 ? 'opacity-50' : ''"
+            :disabled="currentPage === 1"
+            aria-label="Previous page"
+            @click="currentPage--"
+          >
+            <span class="text-[#D6D9E4]" aria-hidden="true">‹</span>
+          </button>
+          <button
+            v-for="n in visiblePageNumbers"
+            :key="n"
+            type="button"
+            class="font-open-sans size-8 rounded-[4px] text-center text-base font-semibold leading-4"
+            :class="
+              n === currentPage
+                ? 'border border-[#D5DFDA] bg-white text-[#5D7B6A]'
+                : 'text-[#C8CCDB]'
+            "
+            :aria-current="n === currentPage ? 'page' : undefined"
+            @click="currentPage = n"
+          >
+            {{ n }}
+          </button>
+          <button
+            type="button"
+            class="flex size-8 items-center justify-center rounded-[4px]"
+            :class="currentPage === totalPages ? 'opacity-50' : ''"
+            :disabled="currentPage === totalPages"
+            aria-label="Next page"
+            @click="currentPage++"
+          >
+            <span class="text-[#9AA1B9]" aria-hidden="true">›</span>
+          </button>
+        </nav>
       </article>
     </main>
   </section>
