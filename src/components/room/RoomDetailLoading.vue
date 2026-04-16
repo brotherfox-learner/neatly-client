@@ -18,12 +18,7 @@ import AppSkeleton from "@/components/ui/AppSkeleton.vue"
     </section>
 
     <section class="mx-auto max-w-[1120px] px-4 pb-14 pt-10 md:pb-20 md:pt-14 lg:px-10 xl:px-[160px]">
-      <div
-        class="mb-6 inline-flex items-center gap-2 rounded-full border border-[#C14817]/15 bg-[#fff7f3] px-3 py-2 text-[12px] font-medium tracking-[0.18em] text-[#C14817] uppercase"
-      >
-        <span class="app-skeleton-orb" />
-        Loading suite details
-      </div>
+
 
       <div class="md:flex md:items-start md:justify-between md:gap-10">
         <div class="md:max-w-[55%] lg:max-w-[60%]">
