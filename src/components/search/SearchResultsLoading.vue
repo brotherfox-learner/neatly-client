@@ -17,7 +17,9 @@ import AppSkeleton from "@/components/ui/AppSkeleton.vue"
       <div
         class="relative h-[320px] w-full shrink-0 overflow-hidden md:min-h-[280px] md:w-[min(40.5%,453px)] md:max-w-[453px] md:self-stretch"
       >
-        <AppSkeleton class="absolute inset-0 size-full rounded-none" />
+        <div class="absolute inset-3 overflow-hidden rounded-lg">
+          <AppSkeleton class="app-skeleton-block--rect size-full min-h-0" />
+        </div>
       </div>
 
       <div

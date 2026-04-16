@@ -521,6 +521,10 @@
     animation: app-skeleton-shimmer 1.6s ease-in-out infinite;
   }
 
+  .app-skeleton-block.app-skeleton-block--rect {
+    border-radius: 0.5rem;
+  }
+
   .app-skeleton-orb {
     width: 0.5rem;
     height: 0.5rem;
