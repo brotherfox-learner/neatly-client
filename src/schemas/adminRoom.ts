@@ -9,14 +9,21 @@ export type RoomImageUploadResponse = z.infer<typeof roomImageUploadResponseSche
 /** Matches Spring JSON for `AdminRoomListItemResponse` (null fields may be omitted; Instant is ISO-8601, often with nanoseconds). */
 export const adminRoomListItemSchema = z.object({
   roomId: z.string().uuid(),
-  imageUrl: z.string(),
-  roomType: z.string(),
-  price: z.coerce.number(),
+  roomNumber: z.string().nullable().optional().transform((v) => (typeof v === "string" ? v.trim() : "")),
+  status: z.string().nullable().optional().transform((v) => (typeof v === "string" && v.trim() ? v.trim() : "Vacant Clean")),
+  imageUrl: z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((v) => (typeof v === "string" ? v : "")),
+  roomType: z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((v) => (typeof v === "string" ? v.trim() : "")),
+  price: z.coerce.number().optional().default(0),
   promotionPrice: z.coerce.number().nullable().optional(),
-  guests: z.coerce.number().int(),
+  guests: z.coerce.number().int().optional().default(0),
   bedType: z.string().nullable().optional(),
   roomSizeSqm: z.coerce.number().nullable().optional(),
-  updatedAt: z.union([z.string(), z.null()]).optional(),
+  /** Spring/Jackson may serialize Instant as string, array, or omit. */
+  updatedAt: z.unknown().optional(),
 })
 
 export const adminRoomListSchema = z.array(adminRoomListItemSchema)
@@ -30,8 +37,8 @@ export const adminRoomDetailSchema = z.object({
   maxOccupancy: z.coerce.number().int(),
   basePrice: z.coerce.number(),
   discountedPrice: z.coerce.number().nullable().optional(),
-  bedType: z.string(),
-  roomSizeSqm: z.coerce.number(),
+  bedType: z.string().nullable().optional(),
+  roomSizeSqm: z.coerce.number().nullable().optional(),
   amenities: z.array(z.string()).default([]),
   mainImageUrl: z.string().default(""),
   galleryImageUrls: z.array(z.string()).default([]),

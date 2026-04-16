@@ -6,6 +6,7 @@ import {
   onMounted,
   ref,
 } from "vue"
+import { api } from "@/lib/api"
 
 const images = [
   "/LandingPagePic/SlidePic1.jpg",
@@ -39,6 +40,24 @@ const trackSlides = computed(() => {
   )
   return [...before, ...images, ...after]
 })
+
+const hotelName = ref("Neatly Hotel")
+const aboutDescription = ref(
+  "Set in Bangkok, Thailand. Neatly Hotel offers 5-star accommodation with an outdoor pool, kids' club, sports facilities and a fitness centre. There is also a spa, an indoor pool and saunas.\n\nAll units at the hotel are equipped with a seating area, a flat-screen TV with satellite channels, a dining area and a private bathroom with free toiletries, a bathtub and a hairdryer. Every room in Neatly Hotel features a furnished balcony. Some rooms are equipped with a coffee machine.\n\nFree WiFi and entertainment facilities are available at property and also rentals are provided to explore the area.",
+)
+const hotelNameParts = computed(() => {
+  const value = hotelName.value.trim()
+  if (!value) return { first: "Neatly", rest: "Hotel" }
+  const words = value.split(/\s+/)
+  if (words.length === 1) return { first: words[0] ?? "Neatly", rest: "Hotel" }
+  return { first: words[0] ?? "Neatly", rest: words.slice(1).join(" ") }
+})
+const aboutParagraphs = computed(() =>
+  aboutDescription.value
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean),
+)
 
 /** Design spec: 400 px per slide at 1440 vw */
 const DESIGN_W = 1440
@@ -137,6 +156,22 @@ function onTrackTransitionEnd(e: TransitionEvent) {
 function pause() { paused.value = true }
 function resume() { paused.value = false }
 
+async function loadHotelInfo() {
+  try {
+    const { data } = await api.get<unknown>("/api/v1/public/hotel-info")
+    if (typeof data !== "object" || data === null) return
+    const raw = data as Record<string, unknown>
+    if (typeof raw.hotelName === "string" && raw.hotelName.trim()) {
+      hotelName.value = raw.hotelName.trim()
+    }
+    if (typeof raw.aboutDescription === "string" && raw.aboutDescription.trim()) {
+      aboutDescription.value = raw.aboutDescription.trim()
+    }
+  } catch {
+    // keep defaults when API is unavailable
+  }
+}
+
 onMounted(() => {
   const mql = window.matchMedia("(min-width: 768px)")
   isDesktop.value = mql.matches
@@ -153,6 +188,7 @@ onMounted(() => {
   nextTick(measureViewport)
 
   autoTimer = setInterval(() => { if (!paused.value) goNext() }, 4000)
+  void loadHotelInfo()
 })
 
 onBeforeUnmount(() => {
@@ -175,24 +211,14 @@ onBeforeUnmount(() => {
         class="grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-4 sm:gap-x-4 md:gap-x-6 md:gap-y-5"
       >
         <h2 id="about-neatly-heading" class="contents">
-          <span class="landing-about-title col-start-1 row-start-1 leading-tight">Neatly</span>
-          <span class="landing-about-title col-start-2 row-start-1 min-w-0 leading-tight">Hotel</span>
+          <span class="landing-about-title col-start-1 row-start-1 leading-tight">{{ hotelNameParts.first }}</span>
+          <span class="landing-about-title col-start-2 row-start-1 min-w-0 leading-tight">{{ hotelNameParts.rest }}</span>
         </h2>
         <div
           class="body-1 font-inter col-start-2 row-start-2 min-w-0 space-y-4 text-[#646D89]"
         >
-          <p>
-            Set in Bangkok, Thailand. Neatly Hotel offers 5-star accommodation with an outdoor pool, kids'
-            club, sports facilities and a fitness centre. There is also a spa, an indoor pool and saunas.
-          </p>
-          <p>
-            All units at the hotel are equipped with a seating area, a flat-screen TV with satellite channels,
-            a dining area and a private bathroom with free toiletries, a bathtub and a hairdryer. Every room
-            in Neatly Hotel features a furnished balcony. Some rooms are equipped with a coffee machine.
-          </p>
-          <p>
-            Free WiFi and entertainment facilities are available at property and also rentals are provided to
-            explore the area.
+          <p v-for="(paragraph, idx) in aboutParagraphs" :key="`about-paragraph-${idx}`">
+            {{ paragraph }}
           </p>
         </div>
       </div>
