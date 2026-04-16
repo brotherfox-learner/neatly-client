@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import axios from "axios"
 import { computed, onMounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { ArrowLeft, Plus, Search, X } from "lucide-vue-next"
 
+import AdminTablePagination from "@/components/admin/AdminTablePagination.vue"
+import { usePagedList } from "@/composables/usePagedList"
 import { api } from "@/lib/api"
 import { adminRoomDetailSchema, roomImageUploadResponseSchema } from "@/schemas/adminRoom"
 
 type RoomRow = {
   roomId: string
+  /** Raw room number from API; used for stable sort order. */
+  roomNumber: string
   roomType: string
   roomSize: string
   bedType: string
@@ -16,6 +21,9 @@ type RoomRow = {
   promotionPrice: string
   imageUrl: string
 }
+
+const route = useRoute()
+const router = useRouter()
 
 const searchQuery = ref("")
 const isLoadingRows = ref(false)
@@ -26,9 +34,13 @@ const filteredRows = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return rows.value
   return rows.value.filter((r) =>
-    [r.roomType, r.bedType, r.roomSize].some((x) => x.toLowerCase().includes(q)),
+    [r.roomNumber, r.roomType, r.bedType, r.roomSize].some((x) => x.toLowerCase().includes(q)),
   )
 })
+
+const { currentPage, totalPages, totalItems, pagedItems, setPage } = usePagedList(filteredRows, [
+  searchQuery,
+])
 
 // Modal state (mock).
 const isEditOpen = ref(false)
@@ -78,7 +90,7 @@ function openEdit(row: RoomRow) {
     promotionEnabled: row.promotionPrice !== "-",
     promotionPrice: row.promotionPrice,
     roomMainImageUrl: row.imageUrl,
-    roomGalleryUrls: [row.imageUrl, row.imageUrl, row.imageUrl, row.imageUrl],
+    roomGalleryUrls: [],
   }
   createError.value = ""
   imageUploadError.value = ""
@@ -284,12 +296,54 @@ function parseNumericInput(value: string): number {
   return Number(normalized)
 }
 
+function preventNegativeSign(event: KeyboardEvent) {
+  if (event.key === "-" || event.key === "Subtract") {
+    event.preventDefault()
+  }
+}
+
+function stripNegativeSign(value: string): string {
+  return String(value ?? "").replace(/-/g, "")
+}
+
+function keepIntegerDigitsOnly(value: string): string {
+  return String(value ?? "").replace(/\D/g, "")
+}
+
 function toEditFormPrice(value: number | null | undefined): string {
   if (value === null || value === undefined) return ""
   return Number(value).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+function parseRoomDetailLenient(data: unknown) {
+  const parsed = adminRoomDetailSchema.safeParse(data)
+  if (parsed.success) return parsed.data
+
+  const raw = typeof data === "object" && data !== null ? (data as Record<string, unknown>) : {}
+  const parseNumberOrNull = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") return null
+    const num = Number(value)
+    return Number.isFinite(num) ? num : null
+  }
+
+  return {
+    roomId: typeof raw.roomId === "string" ? raw.roomId : "",
+    roomTypeName: typeof raw.roomTypeName === "string" ? raw.roomTypeName : "",
+    description: typeof raw.description === "string" ? raw.description : null,
+    maxOccupancy: Number.isFinite(Number(raw.maxOccupancy)) ? Number(raw.maxOccupancy) : 2,
+    basePrice: Number.isFinite(Number(raw.basePrice)) ? Number(raw.basePrice) : 0,
+    discountedPrice: parseNumberOrNull(raw.discountedPrice),
+    bedType: typeof raw.bedType === "string" ? raw.bedType : "",
+    roomSizeSqm: parseNumberOrNull(raw.roomSizeSqm),
+    amenities: Array.isArray(raw.amenities) ? raw.amenities.filter((x): x is string => typeof x === "string") : [],
+    mainImageUrl: typeof raw.mainImageUrl === "string" ? raw.mainImageUrl : "",
+    galleryImageUrls: Array.isArray(raw.galleryImageUrls)
+      ? raw.galleryImageUrls.filter((x): x is string => typeof x === "string")
+      : [],
+  }
 }
 
 function buildRoomPayloadFromForm() {
@@ -304,12 +358,32 @@ function buildRoomPayloadFromForm() {
     createError.value = "Please enter room type."
     return null
   }
-  if (!Number.isFinite(roomSize) || roomSize <= 0) {
+  if (!Number.isFinite(roomSize)) {
     createError.value = "Please enter valid room size (sqm)."
     return null
   }
-  if (!Number.isFinite(basePrice) || basePrice <= 0) {
+  if (!Number.isInteger(roomSize)) {
+    createError.value = "Room size must be a whole number."
+    return null
+  }
+  if (roomSize < 0) {
+    createError.value = "Room size cannot be negative."
+    return null
+  }
+  if (roomSize === 0) {
+    createError.value = "Room size must be greater than 0."
+    return null
+  }
+  if (!Number.isFinite(basePrice)) {
     createError.value = "Please enter valid price per night."
+    return null
+  }
+  if (basePrice < 0) {
+    createError.value = "Price per night cannot be negative."
+    return null
+  }
+  if (basePrice === 0) {
+    createError.value = "Price per night must be greater than 0."
     return null
   }
   if (editForm.value.promotionEnabled) {
@@ -322,16 +396,16 @@ function buildRoomPayloadFromForm() {
       return null
     }
   }
+  if (!editForm.value.roomDescription.trim()) {
+    createError.value = "Please enter room description."
+    return null
+  }
   if (!editForm.value.roomMainImageUrl.trim()) {
     createError.value = "Please upload main image."
     return null
   }
   if (editForm.value.roomGalleryUrls.length < 4) {
     createError.value = "Image gallery must contain at least 4 images."
-    return null
-  }
-  if (amenities.length === 0) {
-    createError.value = "Please add at least 1 amenity."
     return null
   }
 
@@ -382,12 +456,16 @@ async function loadRoomDetail(roomId: string) {
   createError.value = ""
   try {
     const { data } = await api.get<unknown>(`/api/v1/admin/rooms/${roomId}`)
-    const detail = adminRoomDetailSchema.parse(data)
+    const detail = parseRoomDetailLenient(data)
+    const normalizedGallery = (detail.galleryImageUrls ?? [])
+      .map((url) => url.trim())
+      .filter(Boolean)
+
     editForm.value = {
       ...editForm.value,
       roomType: detail.roomTypeName,
-      roomSize: String(detail.roomSizeSqm),
-      bedType: detail.bedType,
+      roomSize: detail.roomSizeSqm === null || detail.roomSizeSqm === undefined ? "" : String(detail.roomSizeSqm),
+      bedType: detail.bedType ?? "single bed",
       guests: String(detail.maxOccupancy),
       price: toEditFormPrice(detail.basePrice),
       promotionEnabled: detail.discountedPrice !== null && detail.discountedPrice !== undefined,
@@ -396,11 +474,16 @@ async function loadRoomDetail(roomId: string) {
         : "",
       roomDescription: detail.description ?? "",
       roomMainImageUrl: detail.mainImageUrl ?? "",
-      roomGalleryUrls: detail.galleryImageUrls ?? [],
+      roomGalleryUrls: normalizedGallery,
       amenities: detail.amenities.length > 0 ? detail.amenities : [""],
     }
   } catch (error) {
-    createError.value = extractApiErrorMessage(error, "Unable to load room details.")
+    const hasUsableRoomData = Boolean(editForm.value.roomType.trim())
+      || Boolean(editForm.value.roomMainImageUrl.trim())
+      || editForm.value.roomGalleryUrls.length > 0
+    if (!hasUsableRoomData) {
+      createError.value = extractApiErrorMessage(error, "Unable to load room details.")
+    }
   } finally {
     isLoadingEditDetail.value = false
   }
@@ -457,6 +540,14 @@ function formatRoomSize(value: number | null | undefined): string {
   })} sqm`
 }
 
+function compareRoomNumberForSort(a: string, b: string): number {
+  const empty = (s: string) => !s.trim()
+  if (empty(a) && empty(b)) return 0
+  if (empty(a)) return 1
+  if (empty(b)) return -1
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
+}
+
 function extractApiErrorMessage(error: unknown, fallback: string): string {
   if (!axios.isAxiosError(error)) return fallback
   if (!error.response) {
@@ -485,9 +576,11 @@ async function loadRooms() {
       rowsError.value = "Unexpected data format from room list API."
       return
     }
-    rows.value = data.map((raw, index) => {
+    const mapped: RoomRow[] = data.map((raw, index) => {
       const room = typeof raw === "object" && raw !== null ? (raw as Record<string, unknown>) : {}
       const roomId = typeof room.roomId === "string" && room.roomId.trim() ? room.roomId : `row-${index}`
+      const roomNumber =
+        typeof room.roomNumber === "string" && room.roomNumber.trim() ? room.roomNumber.trim() : ""
       const roomType = typeof room.roomType === "string" && room.roomType.trim() ? room.roomType : "-"
       const bedType = typeof room.bedType === "string" && room.bedType.trim() ? room.bedType : "-"
       const imageUrl = typeof room.imageUrl === "string" && room.imageUrl.trim() ? room.imageUrl : "/loginimage.svg"
@@ -503,6 +596,7 @@ async function loadRooms() {
 
       return {
         roomId,
+        roomNumber,
         roomType,
         roomSize: Number.isFinite(roomSizeNum) ? formatRoomSize(roomSizeNum) : "-",
         bedType,
@@ -512,6 +606,8 @@ async function loadRooms() {
         imageUrl,
       }
     })
+    mapped.sort((a, b) => compareRoomNumberForSort(a.roomNumber, b.roomNumber))
+    rows.value = mapped
   } catch (error) {
     rows.value = []
     rowsError.value = extractApiErrorMessage(error, "Unable to load room data.")
@@ -522,6 +618,10 @@ async function loadRooms() {
 
 onMounted(() => {
   void loadRooms()
+  if (route.query.create === "1") {
+    openCreate()
+    void router.replace({ name: "admin-room-property", query: {} })
+  }
 })
 </script>
 
@@ -612,7 +712,7 @@ onMounted(() => {
 
           <tbody>
             <tr
-              v-for="row in filteredRows"
+              v-for="row in pagedItems"
               :key="row.roomId"
               class="cursor-pointer border-b border-[#E4E6ED] bg-white transition-colors hover:bg-[#F6F7FC]"
               @click="openEdit(row)"
@@ -647,32 +747,12 @@ onMounted(() => {
         </table>
       </article>
 
-      <nav class="mt-10 flex w-full items-center justify-center gap-2" aria-label="Pagination">
-        <button type="button" class="flex size-8 items-center justify-center rounded-[4px] opacity-50" aria-label="Previous page">
-          <span class="text-[#D6D9E4]" aria-hidden="true">‹</span>
-        </button>
-
-        <button
-          type="button"
-          class="size-8 rounded-[4px] border border-[#D5DFDA] bg-white text-center text-base font-semibold leading-4 text-[#5D7B6A]"
-          aria-current="page"
-        >
-          1
-        </button>
-
-        <button
-          v-for="n in [2, 3, 4, 5]"
-          :key="n"
-          type="button"
-          class="size-8 rounded-[4px] text-center text-base font-semibold leading-4 text-[#C8CCDB]"
-        >
-          {{ n }}
-        </button>
-
-        <button type="button" class="flex size-8 items-center justify-center rounded-[4px]" aria-label="Next page">
-          <span class="text-[#9AA1B9]" aria-hidden="true">›</span>
-        </button>
-      </nav>
+      <AdminTablePagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="totalItems"
+        @update:current-page="setPage"
+      />
     </main>
   </section>
 
@@ -728,7 +808,7 @@ onMounted(() => {
     </header>
 
     <section class="px-4 py-8 sm:px-8 lg:px-[60px] lg:pt-12 lg:pb-16">
-      <section class="w-full max-w-[1080px] rounded-[4px] border border-[#E4E6ED] bg-[#FFFFFF]">
+      <section class="w-full rounded-[4px] border border-[#E4E6ED] bg-[#FFFFFF]">
         <form class="flex flex-col gap-[40px] px-4 py-8 sm:px-8 lg:px-20 lg:py-10 lg:pb-[60px]" @submit.prevent>
         <input
           ref="mainImageInputRef"
@@ -759,7 +839,7 @@ onMounted(() => {
             <!-- Room Type (full width) -->
             <section class="flex flex-col gap-[4px] w-full">
               <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-room-type">
-                Room Type *
+                Room Type <span class="text-[#B61515]">*</span>
               </label>
               <input
                 id="edit-room-type"
@@ -773,21 +853,22 @@ onMounted(() => {
             <section class="grid w-full grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-x-10">
               <section class="flex w-full flex-col gap-[4px]">
                 <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-room-size">
-                  Room size(sqm) *
+                  Room size(sqm) <span class="text-[#B61515]">*</span>
                 </label>
                 <input
                   id="edit-room-size"
                   v-model="editForm.roomSize"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputmode="numeric"
+                  @keydown="preventNegativeSign"
+                  @input="editForm.roomSize = keepIntegerDigitsOnly(editForm.roomSize)"
                   class="h-[48px] w-full rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
                 />
               </section>
 
               <section class="flex w-full flex-col gap-[4px]">
                 <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-bed-type">
-                  Bed type *
+                  Bed type <span class="text-[#B61515]">*</span>
                 </label>
                 <div class="relative">
                   <select
@@ -813,7 +894,7 @@ onMounted(() => {
             <section class="grid w-full grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-x-10">
               <section class="flex w-full flex-col gap-[4px]">
                 <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-guests">
-                  Guest(s) *
+                  Guest(s) <span class="text-[#B61515]">*</span>
                 </label>
                 <div class="relative">
                   <select
@@ -841,12 +922,14 @@ onMounted(() => {
             <section class="grid w-full grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-x-10">
               <section class="flex w-full flex-col gap-[4px]">
                 <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-price">
-                  Price per Night(THB) *
+                  Price per Night(THB) <span class="text-[#B61515]">*</span>
                 </label>
                 <input
                   id="edit-price"
                   v-model="editForm.price"
                   type="text"
+                  @keydown="preventNegativeSign"
+                  @input="editForm.price = stripNegativeSign(editForm.price)"
                   class="h-[48px] w-full rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
                 />
               </section>
@@ -866,6 +949,8 @@ onMounted(() => {
                   v-model="editForm.promotionPrice"
                   type="text"
                   :disabled="!editForm.promotionEnabled"
+                  @keydown="preventNegativeSign"
+                  @input="editForm.promotionPrice = stripNegativeSign(editForm.promotionPrice)"
                   class="h-[48px] flex-1 rounded-[4px] border border-[#D6D9E4] pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9] disabled:bg-[#F1F2F6] disabled:text-[#9AA1B9]"
                 />
               </section>
@@ -876,7 +961,7 @@ onMounted(() => {
         <section class="flex w-full flex-col gap-[12px]">
           <section class="flex flex-col gap-[4px]">
             <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-room-description">
-              Room Description *
+              Room Description <span class="text-[#B61515]">*</span>
             </label>
             <textarea id="edit-room-description" v-model="editForm.roomDescription" class="min-h-[96px] w-full resize-none rounded-[4px] border border-[#D6D9E4] bg-white px-[12px] py-[12px] outline-none focus:border-[#9AA1B9]" />
           </section>
@@ -925,7 +1010,7 @@ onMounted(() => {
 
             <section class="flex flex-col gap-[16px]">
               <h4 class="font-[Inter] text-[20px] leading-[30px] font-semibold tracking-[-0.02em] text-[#9AA1B9]">
-                Image Gallery(At least 4 pictures) *
+                Image Gallery(At least 4 pictures) <span class="text-[#B61515]">*</span>
               </h4>
               <section class="flex flex-wrap gap-[24px]">
                 <section
@@ -1007,7 +1092,7 @@ onMounted(() => {
               >
                 <span class="hidden shrink-0 mb-[12px] cursor-grab text-[#E76B39] active:cursor-grabbing lg:inline" aria-label="Drag to reorder">::</span>
                 <section class="flex min-w-0 w-full flex-1 flex-col gap-1">
-                  <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" :for="`amenity-input-${idx}`">Amenitiy *</label>
+                  <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" :for="`amenity-input-${idx}`">Amenitiy</label>
                   <input
                     :id="`amenity-input-${idx}`"
                     type="text"
@@ -1018,7 +1103,7 @@ onMounted(() => {
                 </section>
                 <button
                   type="button"
-                  class="mb-[12px] flex h-[24px] w-[67px] items-center justify-center rounded-[4px] text-[16px] font-semibold text-[#E76B39] hover:bg-[#F6E9E5]"
+                  class="mb-[12px] flex h-[24px] w-[67px] items-center justify-center rounded-[4px] text-[16px] font-semibold text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
                   aria-label="Delete amenity"
                   @click="removeAmenity(idx)"
                 >
@@ -1041,7 +1126,7 @@ onMounted(() => {
         <section v-if="!isCreating" class="flex justify-end">
           <button
             type="button"
-            class="h-12 w-[121px] rounded-[4px] border border-[#E76B39] bg-white font-[Open Sans] text-[16px] leading-[16px] font-semibold text-[#E76B39] transition-colors hover:bg-[#F6E9E5]"
+            class="h-12 w-[121px] rounded-[4px] border border-red-600 bg-white font-[Open Sans] text-[16px] leading-[16px] font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Delete room"
             :disabled="isSubmittingDelete || isSubmittingUpdate || isLoadingEditDetail"
             @click="openDeleteModal"
@@ -1094,7 +1179,7 @@ onMounted(() => {
             </button>
             <button
               type="button"
-              class="h-12 w-[144px] rounded-[4px] bg-[#C14817] px-8 font-[Open Sans] text-[16px] leading-[16px] font-semibold text-white transition-colors hover:bg-[#8B3210]"
+              class="h-12 w-[144px] rounded-[4px] bg-red-600 px-8 font-[Open Sans] text-[16px] leading-[16px] font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
               :disabled="isSubmittingDelete"
               @click="onDeleteRoom"
             >
