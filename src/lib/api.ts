@@ -15,6 +15,8 @@ export const api = axios.create({
   timeout: 30_000,
 })
 
+let isRedirectingToLogin = false
+
 api.interceptors.request.use(async (config) => {
   if (isPublicBackendPath(config.url)) {
     return config
@@ -46,3 +48,20 @@ api.interceptors.request.use(async (config) => {
   }
   return config
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status
+      const requestUrl = error.config?.url
+      if (status === 401 && !isPublicBackendPath(requestUrl) && typeof window !== 'undefined' && !isRedirectingToLogin) {
+        isRedirectingToLogin = true
+        const currentPath = `${window.location.pathname}${window.location.search}`
+        const redirect = encodeURIComponent(currentPath)
+        window.location.assign(`/login?redirect=${redirect}&reason=session-expired`)
+      }
+    }
+    return Promise.reject(error)
+  },
+)
