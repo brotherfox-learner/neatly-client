@@ -7,7 +7,7 @@ const router = createRouter({
   scrollBehavior(to, _from, savedPosition) {
     if (savedPosition) return savedPosition
     if (to.hash) {
-      return { el: to.hash, behavior: "smooth" }
+      return { el: to.hash, behavior: 'smooth' }
     }
     return { top: 0 }
   },
@@ -53,23 +53,28 @@ const router = createRouter({
     },
     {
       path: '/payment-request',
-      name: 'payment request',
+      name: 'payment-request',
       component: () => import('../views/PaymentSpecialRequest.vue'),
     },
     {
-      path: '/payment-Method',
-      name: 'payment method',
+      path: '/payment-method',
+      name: 'payment-method',
       component: () => import('../views/PaymentMethod.vue'),
     },
     {
       path: '/payment-success',
-      name: 'payment sucess',
+      name: 'payment-sucess',
       component: () => import('../views/PaymentSuccess.vue'),
     },
     {
       path: '/payment-fail',
-      name: 'payment fail',
+      name: 'payment-fail',
       component: () => import('../views/PaymentFail.vue'),
+    },
+    {
+      path: '/analytics-dashboard',
+      name: 'analytics dashboard',
+      component: () => import('../views/AnalyticsDashboard.vue'),
     },
     {
       path: '/admin',
@@ -100,6 +105,18 @@ const router = createRouter({
           name: 'admin-room-property',
           component: () => import('../views/admin/AdminPlaceholderView.vue'),
           meta: { pageTitle: 'Room & Property' },
+        },
+        {
+          path: 'promocode',
+          name: 'admin-promocode',
+          component: () => import('../views/admin/AdminPromoCode.vue'),
+          meta: { pageTitle: 'Promocode Management' },
+        },
+        {
+          path: 'promocode/create',
+          name: 'admin-promocode-create',
+          component: () => import('../views/admin/AdminCreatePromo.vue'),
+          meta: { pageTitle: 'Create Promo Code' },
         },
         {
           path: 'analytics',

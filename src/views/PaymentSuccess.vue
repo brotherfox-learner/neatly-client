@@ -1,5 +1,29 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
+import { useBookingStore, calcServicePrice } from '@/stores/booking'
+import type { ExtraService } from '@/stores/booking'
+
+const router = useRouter()
+const bookingStore = useBookingStore()
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+
+const checkIn = bookingStore.checkIn || '2025-10-19'
+const checkOut = bookingStore.checkOut || '2025-10-21'
+const guestCount = bookingStore.guests || 2
+const roomCount = bookingStore.roomCount || 1
+const roomTypeName = bookingStore.roomTypeName || 'Superior Garden View'
+const paymentMethod = bookingStore.paymentMethod
+
+const serviceTotal = (extra: ExtraService) =>
+  calcServicePrice(extra, bookingStore.totalNights, bookingStore.guests, bookingStore.roomCount)
+
+const handleBackToHome = () => {
+  bookingStore.reset()
+  router.push('/')
+}
 </script>
 
 <template>
@@ -7,10 +31,12 @@ import { Button } from '@/components/ui/button'
     <!-- ===== TOP (SUCCESS) ===== -->
     <div class="bg-green-800 text-white px-6 py-10 text-center flex flex-col gap-4">
       <h1 class="headline-3">Thank you for booking</h1>
-
       <p class="text-green-400 body-2 font-medium!">
         We are looking forward to hosting you at our place. We will send you more information about
         check-in and staying at our Neatly closer to your date of reservation
+      </p>
+      <p v-if="bookingStore.bookingId" class="text-green-300 body-3">
+        Booking ID: {{ bookingStore.bookingId }}
       </p>
     </div>
 
@@ -18,23 +44,19 @@ import { Button } from '@/components/ui/button'
     <div class="bg-green-700 text-white flex-1 px-4 pt-6 pb-10 flex flex-col gap-6 lg:gap-10">
       <!-- CARD -->
       <div class="bg-green-600 rounded-sm p-4 flex flex-col gap-6 lg:p-6 lg:flex-row lg:gap-10">
-        <!-- DATE -->
         <div class="grow">
           <div class="body-1 py-1 flex flex-row gap-2">
-            <span>Thu, 19 Oct 2022</span>
+            <span>{{ formatDate(checkIn) }}</span>
             <span>-</span>
-            <span>Fri, 20 Oct 2022</span>
+            <span>{{ formatDate(checkOut) }}</span>
           </div>
-          <div class="body-1 py-1">2 Guests</div>
+          <div class="body-1 py-1">{{ guestCount }} Guest{{ guestCount > 1 ? 's' : '' }} · {{ roomCount }} Room{{ roomCount > 1 ? 's' : '' }}</div>
         </div>
-
-        <!-- CHECK IN / OUT -->
         <div class="flex flex-row gap-[24px]">
           <div>
             <div class="body-1 font-semibold!">Check-in</div>
             <div class="body-1">After 2:00 PM</div>
           </div>
-
           <div>
             <div class="body-1 font-semibold!">Check-out</div>
             <div class="body-1">Before 12:00 PM</div>
@@ -42,48 +64,48 @@ import { Button } from '@/components/ui/button'
         </div>
       </div>
 
-      <!-- PAYMENT -->
+      <!-- PAYMENT METHOD -->
       <div class="flex gap-4 text-green-300 lg:self-end">
         <span>Payment success via</span>
-        <span class="font-semibold"> Credit Card - *888 </span>
+        <span class="font-semibold">{{ paymentMethod === 'cash' ? 'Cash' : 'Credit Card' }}</span>
       </div>
 
-      <!-- ===== DETAIL ===== -->
+      <!-- DETAIL -->
       <div class="flex flex-col">
         <div class="flex justify-between py-3">
-          <span class="text-green-300">Superior Garden View Room</span>
-          <span class="body-1 font-semibold!">2,500.00</span>
+          <span class="text-green-300">{{ roomTypeName }}</span>
+          <span class="body-1 font-semibold!">{{ bookingStore.roomSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
         </div>
 
-        <div class="flex justify-between py-3">
-          <span class="text-green-300">Airport transfer</span>
-          <span class="body-1 font-semibold!">200.00</span>
+        <div v-for="extra in bookingStore.selectedExtras" :key="extra.id" class="flex justify-between py-3">
+          <span class="text-green-300">{{ extra.name }}</span>
+          <span class="body-1 font-semibold!">
+            {{ extra.type?.toUpperCase() === 'FREE' ? '0.00' : serviceTotal(extra).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}
+          </span>
         </div>
 
-        <div class="flex justify-between py-3">
-          <span class="text-green-300">Promotion Code</span>
-          <span class="body-1 font-semibold!">-400.00</span>
+        <div v-if="bookingStore.discountAmount > 0" class="flex justify-between py-3">
+          <span class="text-green-300">Promo ({{ bookingStore.promoCode }})</span>
+          <span class="body-1 font-semibold! text-orange-300">-{{ bookingStore.discountAmount.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
         </div>
 
         <!-- TOTAL -->
-        <div
-          class="border-t border-green-600 mt-4 pt-4 flex items-center justify-between lg:pt-[24px]"
-        >
+        <div class="border-t border-green-600 mt-4 pt-4 flex items-center justify-between lg:pt-[24px]">
           <span class="body-1 text-green-300">Total</span>
-          <span class="headline-5">THB 2,300.00</span>
+          <span class="headline-5">THB {{ bookingStore.grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
         </div>
       </div>
     </div>
 
-    <!-- ===== ACTION (MOBILE) ===== -->
+    <!-- ACTION (MOBILE) -->
     <div class="lg:hidden px-4 py-6 flex flex-col items-center justify-between gap-[24px]">
-      <Button variant="primary" class="w-full">Back to Home</Button>
+      <Button variant="primary" class="w-full" @click="handleBackToHome">Back to Home</Button>
       <Button variant="ghost" size="ghost">Check Booking Detail</Button>
     </div>
-    <!-- ===== ACTION (DESKTOP) ===== -->
+    <!-- ACTION (DESKTOP) -->
     <div class="hidden lg:flex items-center gap-[40px] mx-auto p-0 mt-[60px]">
       <Button variant="ghost" size="ghost">Check Booking Detail</Button>
-      <Button variant="primary">Back to Home</Button>
+      <Button variant="primary" @click="handleBackToHome">Back to Home</Button>
     </div>
   </div>
 </template>

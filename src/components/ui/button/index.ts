@@ -15,24 +15,24 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary: `
-        bg-orange-600 text-white
+        bg-orange-600 text-white cursor-pointer
         hover:bg-orange-500
         active:bg-orange-700
-        disabled:bg-gray-300 disabled:text-gray-600
+        disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed
       `,
 
         secondary: `
-        bg-white border border-orange-500 text-orange-500
+        bg-white border border-orange-500 text-orange-500 cursor-pointer
         hover:border-orange-400 hover:text-orange-400
         active:border-orange-600 active:text-orange-600
-        disabled:border-gray-400 disabled:text-gray-400
+        disabled:border-gray-400 disabled:text-gray-400 disabled:cursor-not-allowed
       `,
 
         ghost: `
-        text-orange-500
+        text-orange-500 cursor-pointer
         hover:text-orange-400
         active:text-orange-600
-        disabled:text-gray-500
+        disabled:text-gray-500 disabled:cursor-not-allowed
       `,
       },
 

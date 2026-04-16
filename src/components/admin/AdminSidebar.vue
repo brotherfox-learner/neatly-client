@@ -10,12 +10,13 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const navItems = [
-  { to: "/admin/customer-booking", label: "Customer Booking", icon: "booking" as const },
-  { to: "/admin/room-management", label: "Room Management", icon: "manage" as const },
-  { to: "/admin/hotel-information", label: "Hotel Information", icon: "hotel" as const },
-  { to: "/admin/room-property", label: "Room & Property", icon: "room" as const },
-  { to: "/admin/analytics", label: "Analytics Dashboard", icon: "analytic" as const },
-  { to: "/admin/chatbot-setup", label: "Chatbot Setup", icon: "chat" as const },
+  { to: "/admin/customer-booking", label: "Customer Booking", icon: "booking" },
+  { to: "/admin/room-management", label: "Room Management", icon: "manage" },
+  { to: "/admin/hotel-information", label: "Hotel Information", icon: "hotel" },
+  { to: "/admin/room-property", label: "Room & Property", icon: "room" },
+  { to: "/admin/promocode", label: "Promo code", icon: "promo" },
+  { to: "/admin/analytics", label: "Analytics Dashboard", icon: "analytic" },
+  { to: "/admin/chatbot-setup", label: "Chatbot Setup", icon: "chat" },
 ] as const
 
 function isActive(path: string) {
