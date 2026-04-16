@@ -3,13 +3,16 @@ import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { BriefcaseBusiness, Check } from 'lucide-vue-next'
-import { useBookingStore } from '@/stores/booking'
+import { useBookingStore, calcServicePrice } from '@/stores/booking'
+import type { ExtraService } from '@/stores/booking'
 import { getExtraServices } from '@/api/booking'
+import { useBookingTimer } from '@/composables/useBookingTimer'
+import BookingTimerModal from '@/components/BookingTimerModal.vue'
 
 const router = useRouter()
 const bookingStore = useBookingStore()
+const { timeLeft, isExpiredModalOpen, extendTimer } = useBookingTimer()
 
-// ── Dev mock ──────────────────────────────────────────────────────────────────
 const roomTypeName = bookingStore.roomTypeName || 'Superior Garden View'
 const roomCount = bookingStore.roomCount || 1
 const checkIn = bookingStore.checkIn || '2025-10-19'
@@ -19,43 +22,68 @@ const guestCount = bookingStore.guests || 2
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 
-// ── Load extra services from API (with mock fallback) ─────────────────────────
+// ── Load services from API ────────────────────────────────────────────────────
 onMounted(async () => {
   if (bookingStore.extraServices.length === 0) {
     bookingStore.extraServices = await getExtraServices()
   }
 })
 
-// ── Standard requests ─────────────────────────────────────────────────────────
-const STANDARD_OPTIONS = [
-  { key: 'early-checkin', label: 'Early check-in' },
-  { key: 'late-checkout', label: 'Late check-out' },
-  { key: 'non-smoking', label: 'Non-smoking room' },
-  { key: 'high-floor', label: 'A room on the high floor' },
-  { key: 'quiet-room', label: 'A quiet room' },
-]
+// ── Split by type from API ────────────────────────────────────────────────────
+const freeServices = computed(() =>
+  bookingStore.extraServices.filter((s) => s.type?.toUpperCase() === 'FREE'),
+)
+const paidServices = computed(() =>
+  bookingStore.extraServices.filter((s) => s.type?.toUpperCase() !== 'FREE'),
+)
 
-const toggleStandard = (key: string) => {
-  const idx = bookingStore.standardRequests.indexOf(key)
-  if (idx > -1) bookingStore.standardRequests.splice(idx, 1)
-  else bookingStore.standardRequests.push(key)
+// ── Pricing helpers ───────────────────────────────────────────────────────────
+const nights = bookingStore.totalNights || 2
+const guests = bookingStore.guests || guestCount
+const rooms = bookingStore.roomCount || roomCount
+
+function pricingLabel(service: ExtraService): string {
+  const unit = service.chargeUnit === 'per_person' ? '/person' : '/room'
+  const period =
+    service.pricingType === 'per_day' ? '/day'
+    : service.pricingType === 'per_night' ? '/night'
+    : service.pricingType === 'per_trip' ? '/trip'
+    : '/stay'
+  return `+THB ${service.price.toLocaleString()}${unit}${period}`
 }
 
-// ── Extra services (special requests with price) ──────────────────────────────
-const toggleExtra = (id: string) => {
+function serviceTotal(service: ExtraService): number {
+  return calcServicePrice(service, nights, guests, rooms)
+}
+
+function serviceBreakdown(service: ExtraService): string {
+  const parts: string[] = []
+  if (service.pricingType === 'per_day' || service.pricingType === 'per_night') {
+    parts.push(`×${nights} nights`)
+  }
+  if (service.chargeUnit === 'per_person') parts.push(`×${guests} guests`)
+  else parts.push(`×${rooms} room${rooms > 1 ? 's' : ''}`)
+  return parts.join(' ')
+}
+
+// ── Toggle (both FREE and PAID use same selectedExtraIds) ─────────────────────
+const toggleService = (id: string) => {
   const idx = bookingStore.selectedExtraIds.indexOf(id)
   if (idx > -1) bookingStore.selectedExtraIds.splice(idx, 1)
   else bookingStore.selectedExtraIds.push(id)
 }
 
-// ── Summary computed ──────────────────────────────────────────────────────────
-const selectedExtrasForSummary = computed(() => bookingStore.selectedExtras)
+// ── Summary ───────────────────────────────────────────────────────────────────
+const selectedFreeForSummary = computed(() =>
+  freeServices.value.filter((s) => bookingStore.selectedExtraIds.includes(s.id)),
+)
+const selectedPaidForSummary = computed(() => bookingStore.selectedExtras.filter((s) => s.type?.toUpperCase() !== 'FREE'))
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 const handleNext = () => {
   bookingStore.setExtras({
     selectedExtraIds: [...bookingStore.selectedExtraIds],
-    standardRequests: [...bookingStore.standardRequests],
+    standardRequests: [],
     additionalRequest: bookingStore.additionalRequest,
   })
   router.push('/payment-method')
@@ -67,6 +95,7 @@ const handleBack = () => {
 </script>
 
 <template>
+  <BookingTimerModal :open="isExpiredModalOpen" @extend="extendTimer" />
   <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:py-[80px]">
     <!-- ===== HEADER ===== -->
     <div class="flex flex-col gap-6 py-[24px] px-[16px] bg-[#f7f7fb] lg:gap-10 lg:p-0">
@@ -103,48 +132,19 @@ const handleBack = () => {
       <!-- ===== LEFT ===== -->
       <div class="grow bg-white border border-gray-300 rounded-sm py-6 px-4 flex flex-col gap-6 lg:p-10 lg:gap-10">
 
-        <!-- STANDARD REQUEST -->
-        <div class="flex flex-col gap-6 lg:gap-10">
+        <!-- STANDARD REQUEST (FREE type from API) -->
+        <div v-if="freeServices.length > 0" class="flex flex-col gap-6 lg:gap-10">
           <div class="text-gray-600">
             <h2 class="headline-5 lg:text-gray-800">Standard Request</h2>
             <p class="body-2">These requests are not confirmed (Depend on the available room)</p>
           </div>
           <div class="flex flex-col gap-4 lg:gap-6">
             <label
-              v-for="opt in STANDARD_OPTIONS"
-              :key="opt.key"
-              class="flex items-center gap-3 cursor-pointer group"
-            >
-              <input type="checkbox" class="sr-only" @change="toggleStandard(opt.key)" :checked="bookingStore.standardRequests.includes(opt.key)" />
-              <div
-                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
-                :class="bookingStore.standardRequests.includes(opt.key) ? 'bg-orange-500 border-orange-300' : 'bg-white border-gray-400 group-hover:border-orange-500'"
-              >
-                <Check v-if="bookingStore.standardRequests.includes(opt.key)" :size="16" class="text-white" />
-              </div>
-              <span
-                class="body-1 transition-colors"
-                :class="bookingStore.standardRequests.includes(opt.key) ? 'text-gray-900 font-medium' : 'text-gray-700 group-hover:text-orange-500'"
-              >
-                {{ opt.label }}
-              </span>
-            </label>
-          </div>
-        </div>
-
-        <!-- SPECIAL REQUEST (Extra services from API) -->
-        <div class="flex flex-col gap-6 lg:gap-10">
-          <div class="text-gray-600">
-            <h2 class="headline-5 lg:text-gray-800">Special Request</h2>
-            <p class="body-2">Additional charge may apply</p>
-          </div>
-          <div class="flex flex-col gap-4 lg:gap-6">
-            <label
-              v-for="service in bookingStore.extraServices"
+              v-for="service in freeServices"
               :key="service.id"
               class="flex items-center gap-3 cursor-pointer group"
             >
-              <input type="checkbox" class="sr-only" @change="toggleExtra(service.id)" :checked="bookingStore.selectedExtraIds.includes(service.id)" />
+              <input type="checkbox" class="sr-only" @change="toggleService(service.id)" :checked="bookingStore.selectedExtraIds.includes(service.id)" />
               <div
                 class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
                 :class="bookingStore.selectedExtraIds.includes(service.id) ? 'bg-orange-500 border-orange-300' : 'bg-white border-gray-400 group-hover:border-orange-500'"
@@ -155,7 +155,36 @@ const handleBack = () => {
                 class="body-1 transition-colors"
                 :class="bookingStore.selectedExtraIds.includes(service.id) ? 'text-gray-900 font-medium' : 'text-gray-700 group-hover:text-orange-500'"
               >
-                {{ service.name }} (+THB {{ service.price.toLocaleString() }})
+                {{ service.name }}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- SPECIAL REQUEST (PAID type from API) -->
+        <div v-if="paidServices.length > 0" class="flex flex-col gap-6 lg:gap-10">
+          <div class="text-gray-600">
+            <h2 class="headline-5 lg:text-gray-800">Special Request</h2>
+            <p class="body-2">Additional charge may apply</p>
+          </div>
+          <div class="flex flex-col gap-4 lg:gap-6">
+            <label
+              v-for="service in paidServices"
+              :key="service.id"
+              class="flex items-center gap-3 cursor-pointer group"
+            >
+              <input type="checkbox" class="sr-only" @change="toggleService(service.id)" :checked="bookingStore.selectedExtraIds.includes(service.id)" />
+              <div
+                class="w-6 h-6 border rounded-sm flex items-center justify-center transition-colors"
+                :class="bookingStore.selectedExtraIds.includes(service.id) ? 'bg-orange-500 border-orange-300' : 'bg-white border-gray-400 group-hover:border-orange-500'"
+              >
+                <Check v-if="bookingStore.selectedExtraIds.includes(service.id)" :size="16" class="text-white" />
+              </div>
+              <span
+                class="body-1 transition-colors"
+                :class="bookingStore.selectedExtraIds.includes(service.id) ? 'text-gray-900 font-medium' : 'text-gray-700 group-hover:text-orange-500'"
+              >
+                {{ service.name }} ({{ pricingLabel(service) }})
               </span>
             </label>
           </div>
@@ -186,6 +215,7 @@ const handleBack = () => {
               <BriefcaseBusiness color="#81A08F" />
               <span class="headline-5">Booking Detail</span>
             </div>
+            <div class="bg-orange-800/60 text-orange-200 px-2 py-1 rounded-sm body-2">{{ timeLeft }}</div>
           </div>
 
           <div class="py-[24px] px-[16px] flex flex-col gap-6 lg:p-6 lg:gap-10">
@@ -215,13 +245,28 @@ const handleBack = () => {
                   <span class="body-1 text-green-300">{{ roomTypeName }}</span>
                   <span class="body-1 font-semibold!">{{ bookingStore.roomSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
                 </div>
+
+                <!-- Standard requests (FREE) — label only, no price -->
                 <div
-                  v-for="extra in selectedExtrasForSummary"
-                  :key="extra.id"
+                  v-for="service in selectedFreeForSummary"
+                  :key="service.id"
                   class="flex justify-between py-[12px]"
                 >
-                  <span class="body-1 text-green-300">{{ extra.name }}</span>
-                  <span class="body-1 font-semibold!">{{ extra.price.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+                  <span class="body-1 text-green-300">{{ service.name }}</span>
+                  <span class="body-1 font-semibold!">0.00</span>
+                </div>
+
+                <!-- Special requests (PAID) — calculated price + breakdown -->
+                <div
+                  v-for="service in selectedPaidForSummary"
+                  :key="service.id"
+                  class="flex justify-between py-[12px]"
+                >
+                  <div class="flex flex-col">
+                    <span class="body-1 text-green-300">{{ service.name }}</span>
+                    <span class="text-xs text-green-400">{{ serviceBreakdown(service) }}</span>
+                  </div>
+                  <span class="body-1 font-semibold!">{{ serviceTotal(service).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
                 </div>
               </div>
 

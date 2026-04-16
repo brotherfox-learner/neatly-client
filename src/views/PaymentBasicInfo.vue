@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button'
 import { BriefcaseBusiness } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useBookingStore } from '@/stores/booking'
+import { useBookingTimer } from '@/composables/useBookingTimer'
+import BookingTimerModal from '@/components/BookingTimerModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const bookingStore = useBookingStore()
+const { timeLeft, isExpiredModalOpen, extendTimer } = useBookingTimer()
 
 // ── Form state ────────────────────────────────────────────────────────────────
 const firstName = ref('')
@@ -50,6 +53,9 @@ onMounted(() => {
     firstName.value = authStore.user.firstName ?? ''
     lastName.value = authStore.user.lastName ?? ''
     email.value = authStore.user.email ?? ''
+    phone.value = authStore.user.phone ?? ''
+    dateOfBirth.value = authStore.user.dateOfBirth ?? ''
+    country.value = authStore.user.country ?? ''
   }
   // ถ้า step เคยกรอกแล้ว ให้เติมกลับมา
   if (bookingStore.guestInfo.firstName) {
@@ -94,6 +100,7 @@ const handleBack = () => {
 </script>
 
 <template>
+  <BookingTimerModal :open="isExpiredModalOpen" @extend="extendTimer" />
   <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:py-[80px]">
     <!-- ===== HEADER ===== -->
     <div class="flex flex-col gap-6 py-[24px] px-[16px] bg-[#f7f7fb] lg:gap-10 lg:p-0">
@@ -217,6 +224,7 @@ const handleBack = () => {
               <BriefcaseBusiness color="#81A08F" />
               <span class="headline-5">Booking Detail</span>
             </div>
+            <div class="bg-orange-800/60 text-orange-200 px-2 py-1 rounded-sm body-2">{{ timeLeft }}</div>
           </div>
 
           <div class="py-[24px] px-[16px] flex flex-col gap-6 lg:p-6 lg:gap-10">

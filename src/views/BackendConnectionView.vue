@@ -12,7 +12,7 @@ function formatQueryError(err: unknown): string {
   if (err instanceof Error) {
     return err.message
   }
-  return 'เกิดข้อผิดพลาด'
+  return 'Something went wrong'
 }
 
 const healthSchema = z.object({ status: z.string() }).passthrough()
@@ -65,7 +65,7 @@ async function signOut() {
   await supabase?.auth.signOut()
 }
 
-const apiBase = computed(() => import.meta.env.VITE_API_URL || '(ตั้ง VITE_API_URL)')
+const apiBase = computed(() => import.meta.env.VITE_API_URL || '(set VITE_API_URL)')
 
 const {
   isPending: healthPending,
@@ -104,10 +104,11 @@ const meErrorText = computed(() => formatQueryError(unref(meErr)))
 <template>
   <article class="mx-auto max-w-2xl space-y-8 py-6">
     <header class="space-y-2">
-      <h1 class="text-2xl font-semibold tracking-tight">ทดสอบการเชื่อมต่อ Backend</h1>
+      <h1 class="text-2xl font-semibold tracking-tight">Backend connection test</h1>
       <p class="text-muted-foreground text-sm">
-        รัน Spring ที่ <span class="font-mono">{{ apiBase }}</span> และให้ CORS อนุญาต
-        <span class="font-mono">http://localhost:5173</span> (ค่าเริ่มต้นของ server ตรงแล้ว)
+        Run Spring at <span class="font-mono">{{ apiBase }}</span> and allow CORS from
+        <span class="font-mono">http://localhost:5173</span> (default server config should already
+        allow this).
       </p>
     </header>
 
@@ -116,9 +117,11 @@ const meErrorText = computed(() => formatQueryError(unref(meErr)))
       aria-labelledby="health-heading"
     >
       <h2 id="health-heading" class="mb-3 text-lg font-medium">Actuator health</h2>
-      <p class="text-muted-foreground mb-3 text-sm">ไม่ต้อง login — ใช้ยืนยัน CORS + เซิร์ฟเวอร์ทำงาน</p>
-      <Button class="mb-3" type="button" @click="() => refetchHealth()">โหลดใหม่</Button>
-      <p v-if="healthPending" class="text-sm">กำลังโหลด…</p>
+      <p class="text-muted-foreground mb-3 text-sm">
+        No login required — use this to verify CORS and that the server is up.
+      </p>
+      <Button class="mb-3" type="button" @click="() => refetchHealth()">Reload</Button>
+      <p v-if="healthPending" class="text-sm">Loading…</p>
       <p v-else-if="healthIsError" class="text-destructive text-sm">
         {{ healthErrorText }}
       </p>
@@ -133,33 +136,36 @@ const meErrorText = computed(() => formatQueryError(unref(meErr)))
     >
       <h2 id="me-heading" class="mb-3 text-lg font-medium">GET /api/v1/me</h2>
       <p v-if="!isSupabaseConfigured()" class="text-muted-foreground text-sm">
-        ตั้งค่า <span class="font-mono">VITE_SUPABASE_URL</span> และ
-        <span class="font-mono">VITE_SUPABASE_ANON_KEY</span> ใน <span class="font-mono">.env.local</span>
-        แล้ว login ผ่าน Supabase เพื่อส่ง Bearer token
+        Set <span class="font-mono">VITE_SUPABASE_URL</span> and
+        <span class="font-mono">VITE_SUPABASE_ANON_KEY</span> in
+        <span class="font-mono">.env.local</span>, then sign in with Supabase so requests include a
+        Bearer token.
       </p>
       <template v-else-if="!hasSupabaseSession">
         <p class="text-muted-foreground mb-3 text-sm">
-          ยังไม่มี session — ใช้ฟอร์มด้านล่าง (อีเมล/รหัสผ่าน) หรือ login จากแอปจริงของคุณ
+          No session yet — use the form below (email / password) or sign in from your main app.
         </p>
         <section
           class="bg-muted/40 mb-4 rounded-md border border-dashed p-4"
           aria-labelledby="dev-login-heading"
         >
           <h3 id="dev-login-heading" class="mb-2 text-sm font-medium">
-            ทดสอบ login กับ Supabase (dev)
+            Test Supabase sign-in (dev)
           </h3>
           <ol class="text-muted-foreground mb-4 list-decimal space-y-1 pl-5 text-xs">
             <li>
-              ใน Supabase Dashboard → Authentication → เปิด Email provider แล้วสร้าง user (หรือ Sign up จากแอป)
+              In Supabase Dashboard → Authentication, enable the Email provider and create a user
+              (or sign up from your app).
             </li>
             <li>
-              Authentication → URL configuration → ใส่
-              <span class="font-mono">http://localhost:5173</span> ใน Site URL / Redirect URLs ถ้าใช้ magic link
+              Under Authentication → URL configuration, add
+              <span class="font-mono">http://localhost:5173</span> to Site URL / Redirect URLs if
+              you use magic links.
             </li>
           </ol>
           <form class="space-y-3" @submit.prevent="signInWithPassword">
             <div class="space-y-1">
-              <label class="text-sm font-medium" for="dev-login-email">อีเมล</label>
+              <label class="text-sm font-medium" for="dev-login-email">Email</label>
               <input
                 id="dev-login-email"
                 v-model="loginEmail"
@@ -171,7 +177,7 @@ const meErrorText = computed(() => formatQueryError(unref(meErr)))
               />
             </div>
             <div class="space-y-1">
-              <label class="text-sm font-medium" for="dev-login-password">รหัสผ่าน</label>
+              <label class="text-sm font-medium" for="dev-login-password">Password</label>
               <input
                 id="dev-login-password"
                 v-model="loginPassword"
@@ -184,7 +190,7 @@ const meErrorText = computed(() => formatQueryError(unref(meErr)))
             </div>
             <p v-if="authFormError" class="text-destructive text-sm">{{ authFormError }}</p>
             <Button :disabled="authBusy" type="submit">
-              {{ authBusy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ' }}
+              {{ authBusy ? 'Signing in…' : 'Sign in' }}
             </Button>
           </form>
         </section>
@@ -192,13 +198,13 @@ const meErrorText = computed(() => formatQueryError(unref(meErr)))
       <template v-else>
         <p class="text-muted-foreground mb-2 text-sm">
           Session:
-          <span class="text-foreground font-mono text-xs">{{ sessionEmail ?? '(มี access token)' }}</span>
+          <span class="text-foreground font-mono text-xs">{{ sessionEmail ?? '(has access token)' }}</span>
         </p>
         <div class="mb-3 flex flex-wrap gap-2">
-          <Button type="button" variant="outline" @click="() => signOut()">ออกจากระบบ</Button>
-          <Button type="button" @click="() => refetchMe()">โหลด /me</Button>
+          <Button type="button" variant="outline" @click="() => signOut()">Sign out</Button>
+          <Button type="button" @click="() => refetchMe()">Load /me</Button>
         </div>
-        <p v-if="mePending" class="text-sm">กำลังโหลด…</p>
+        <p v-if="mePending" class="text-sm">Loading…</p>
         <p v-else-if="meIsError" class="text-destructive text-sm">
           {{ meErrorText }}
         </p>

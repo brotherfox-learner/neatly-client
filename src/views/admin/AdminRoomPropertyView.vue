@@ -1,8 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
-import { ArrowLeft, Plus, Search, Trash2, X } from "lucide-vue-next"
+import axios from "axios"
+import { computed, onMounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import { ArrowLeft, Plus, Search, X } from "lucide-vue-next"
+
+import AdminTablePagination from "@/components/admin/AdminTablePagination.vue"
+import { usePagedList } from "@/composables/usePagedList"
+import { api } from "@/lib/api"
+import { adminRoomDetailSchema, roomImageUploadResponseSchema } from "@/schemas/adminRoom"
 
 type RoomRow = {
+  roomId: string
+  /** Raw room number from API; used for stable sort order. */
+  roomNumber: string
   roomType: string
   roomSize: string
   bedType: string
@@ -12,50 +22,58 @@ type RoomRow = {
   imageUrl: string
 }
 
+const route = useRoute()
+const router = useRouter()
+
 const searchQuery = ref("")
-
-// Mock table rows. Later replace with backend data.
-const rows = ref<RoomRow[]>(
-  Array.from({ length: 8 }, (_, i) => {
-    const base = i % 4
-    const roomTypes = ["Superior Garden View", "Deluxe", "Superior", "Premier Sea View"] as const
-    const roomType = roomTypes[base] ?? roomTypes[0]
-
-    return {
-      roomType,
-      roomSize: "32 sqm",
-      bedType: "Double Bed",
-      guests: "2",
-      price: "3,000.00",
-      promotionPrice: "2,500.00",
-      imageUrl: "/loginimage.svg",
-    }
-  }),
-)
+const isLoadingRows = ref(false)
+const rowsError = ref("")
+const rows = ref<RoomRow[]>([])
 
 const filteredRows = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return rows.value
   return rows.value.filter((r) =>
-    [r.roomType, r.bedType, r.roomSize].some((x) => x.toLowerCase().includes(q)),
+    [r.roomNumber, r.roomType, r.bedType, r.roomSize].some((x) => x.toLowerCase().includes(q)),
   )
 })
+
+const { currentPage, totalPages, totalItems, pagedItems, setPage } = usePagedList(filteredRows, [
+  searchQuery,
+])
 
 // Modal state (mock).
 const isEditOpen = ref(false)
 const isCreating = ref(false)
 const selectedRoom = ref<RoomRow | null>(null)
+const isSubmittingCreate = ref(false)
+const isSubmittingUpdate = ref(false)
+const isSubmittingDelete = ref(false)
+const isLoadingEditDetail = ref(false)
+const isDeleteModalOpen = ref(false)
+const createError = ref("")
+const imageUploadError = ref("")
+const isUploadingRoomImage = ref(false)
+const mainImageInputRef = ref<HTMLInputElement | null>(null)
+const galleryImageInputRef = ref<HTMLInputElement | null>(null)
+/** `null` = append new gallery image; number = replace at index */
+const galleryUploadTargetIndex = ref<number | null>(null)
+const draggedGalleryIndex = ref<number | null>(null)
+const dragOverGalleryIndex = ref<number | null>(null)
+const draggedAmenityIndex = ref<number | null>(null)
+const dragOverAmenityIndex = ref<number | null>(null)
 
 const editForm = ref({
   roomType: "",
-  roomSize: "32 sqm",
-  bedType: "Double bed",
+  roomSize: "",
+  bedType: "single bed",
   guests: "2",
-  price: "3,000.00",
-  promotionPrice: "2,500.00",
+  price: "",
+  promotionEnabled: false,
+  promotionPrice: "",
   roomDescription: "Rooms (36sqm) with full garden views, 1 single bed, bathroom with bathtub & shower.",
-  roomMainImageUrl: "/loginimage.svg",
-  roomGalleryUrls: ["/loginimage.svg", "/loginimage.svg", "/loginimage.svg", "/loginimage.svg"],
+  roomMainImageUrl: "",
+  roomGalleryUrls: [] as string[],
   amenities: ["Safe in Room", "Air Conditioning", "High speed internet connection", "Hairdryer", "Shower"],
 })
 
@@ -65,14 +83,19 @@ function openEdit(row: RoomRow) {
   editForm.value = {
     ...editForm.value,
     roomType: row.roomType,
-    roomSize: row.roomSize,
-    bedType: row.bedType,
+    roomSize: row.roomSize.replace(" sqm", ""),
+    bedType: row.bedType.toLowerCase(),
     guests: row.guests,
     price: row.price,
+    promotionEnabled: row.promotionPrice !== "-",
     promotionPrice: row.promotionPrice,
     roomMainImageUrl: row.imageUrl,
+    roomGalleryUrls: [],
   }
+  createError.value = ""
+  imageUploadError.value = ""
   isEditOpen.value = true
+  void loadRoomDetail(row.roomId)
 }
 
 function openCreate() {
@@ -81,27 +104,525 @@ function openCreate() {
   editForm.value = {
     ...editForm.value,
     roomType: "",
-    roomSize: "32 sqm",
-    bedType: "Double bed",
+    roomSize: "",
+    bedType: "single bed",
     guests: "2",
-    price: "3,000.00",
-    promotionPrice: "2,500.00",
+    price: "",
+    promotionEnabled: false,
+    promotionPrice: "",
     roomDescription: "",
-    roomMainImageUrl: "/loginimage.svg",
-    roomGalleryUrls: ["/loginimage.svg", "/loginimage.svg", "/loginimage.svg", "/loginimage.svg"],
-    amenities: ["Safe in Room", "Air Conditioning"],
+    roomMainImageUrl: "",
+    roomGalleryUrls: [],
+    amenities: [""],
   }
+  createError.value = ""
+  imageUploadError.value = ""
   isEditOpen.value = true
 }
 
 function closeModal() {
   isEditOpen.value = false
   selectedRoom.value = null
+  isLoadingEditDetail.value = false
+  isDeleteModalOpen.value = false
+}
+
+function openDeleteModal() {
+  if (!selectedRoom.value) return
+  isDeleteModalOpen.value = true
+}
+
+function closeDeleteModal() {
+  isDeleteModalOpen.value = false
 }
 
 function removeAmenity(idx: number) {
   editForm.value.amenities.splice(idx, 1)
 }
+
+function addAmenity() {
+  editForm.value.amenities.push("")
+}
+
+function openMainImagePicker() {
+  imageUploadError.value = ""
+  mainImageInputRef.value?.click()
+}
+
+function openGalleryPickerForNew() {
+  imageUploadError.value = ""
+  galleryUploadTargetIndex.value = null
+  galleryImageInputRef.value?.click()
+}
+
+function openGalleryPickerForReplace(idx: number) {
+  imageUploadError.value = ""
+  galleryUploadTargetIndex.value = idx
+  galleryImageInputRef.value?.click()
+}
+
+async function onMainImageFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ""
+  if (!file) return
+  await uploadRoomImageToForm(file, "main")
+}
+
+async function onGalleryImageFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ""
+  if (!file) return
+  const replaceIdx = galleryUploadTargetIndex.value
+  galleryUploadTargetIndex.value = null
+  await uploadRoomImageToForm(file, "gallery", replaceIdx)
+}
+
+async function uploadRoomImageToForm(
+  file: File,
+  target: "main" | "gallery",
+  replaceGalleryIndex: number | null | undefined = undefined,
+) {
+  imageUploadError.value = ""
+  isUploadingRoomImage.value = true
+  const formData = new FormData()
+  formData.append("file", file)
+  try {
+    const { data } = await api.post<unknown>("/api/v1/admin/rooms/images", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+    const { imageUrl } = roomImageUploadResponseSchema.parse(data)
+    if (target === "main") {
+      editForm.value.roomMainImageUrl = imageUrl
+    } else if (replaceGalleryIndex !== null && replaceGalleryIndex !== undefined) {
+      const next = [...editForm.value.roomGalleryUrls]
+      if (replaceGalleryIndex >= 0 && replaceGalleryIndex < next.length) {
+        next[replaceGalleryIndex] = imageUrl
+        editForm.value.roomGalleryUrls = next
+      }
+    } else {
+      editForm.value.roomGalleryUrls = [...editForm.value.roomGalleryUrls, imageUrl]
+    }
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status
+      const msg = error.response?.data?.message
+      if (status === 403) {
+        imageUploadError.value = "You do not have permission to upload images."
+      } else if (status === 401) {
+        imageUploadError.value = "Your session has expired. Please sign in again."
+      } else if (typeof msg === "string" && msg) {
+        imageUploadError.value = msg
+      } else {
+        imageUploadError.value = "Image upload failed."
+      }
+    } else {
+      imageUploadError.value = "Image upload failed."
+    }
+  } finally {
+    isUploadingRoomImage.value = false
+  }
+}
+
+function removeGalleryImage(idx: number) {
+  editForm.value.roomGalleryUrls.splice(idx, 1)
+}
+
+function onGalleryDragStart(idx: number) {
+  draggedGalleryIndex.value = idx
+}
+
+function onGalleryDragOver(e: DragEvent, idx: number) {
+  e.preventDefault()
+  dragOverGalleryIndex.value = idx
+}
+
+function onGalleryDragLeave() {
+  dragOverGalleryIndex.value = null
+}
+
+function onGalleryDragEnd() {
+  draggedGalleryIndex.value = null
+  dragOverGalleryIndex.value = null
+}
+
+function onGalleryDrop(dropIndex: number) {
+  const from = draggedGalleryIndex.value
+  draggedGalleryIndex.value = null
+  dragOverGalleryIndex.value = null
+  if (from === null || from === dropIndex) return
+  const next = [...editForm.value.roomGalleryUrls]
+  const [moved] = next.splice(from, 1)
+  if (!moved) return
+  next.splice(dropIndex, 0, moved)
+  editForm.value.roomGalleryUrls = next
+}
+
+function onAmenityDragStart(idx: number) {
+  draggedAmenityIndex.value = idx
+}
+
+function onAmenityDragOver(e: DragEvent, idx: number) {
+  e.preventDefault()
+  dragOverAmenityIndex.value = idx
+}
+
+function onAmenityDragLeave() {
+  dragOverAmenityIndex.value = null
+}
+
+function onAmenityDragEnd() {
+  draggedAmenityIndex.value = null
+  dragOverAmenityIndex.value = null
+}
+
+function onAmenityDrop(dropIndex: number) {
+  const from = draggedAmenityIndex.value
+  draggedAmenityIndex.value = null
+  dragOverAmenityIndex.value = null
+  if (from === null || from === dropIndex) return
+  const next = [...editForm.value.amenities]
+  const [moved] = next.splice(from, 1)
+  if (moved === undefined) return
+  next.splice(dropIndex, 0, moved)
+  editForm.value.amenities = next
+}
+
+function parseNumericInput(value: string): number {
+  const normalized = String(value ?? "")
+    .replace(/,/g, "")
+    .trim()
+  return Number(normalized)
+}
+
+function preventNegativeSign(event: KeyboardEvent) {
+  if (event.key === "-" || event.key === "Subtract") {
+    event.preventDefault()
+  }
+}
+
+function stripNegativeSign(value: string): string {
+  return String(value ?? "").replace(/-/g, "")
+}
+
+function keepIntegerDigitsOnly(value: string): string {
+  return String(value ?? "").replace(/\D/g, "")
+}
+
+function toEditFormPrice(value: number | null | undefined): string {
+  if (value === null || value === undefined) return ""
+  return Number(value).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+function parseRoomDetailLenient(data: unknown) {
+  const parsed = adminRoomDetailSchema.safeParse(data)
+  if (parsed.success) return parsed.data
+
+  const raw = typeof data === "object" && data !== null ? (data as Record<string, unknown>) : {}
+  const parseNumberOrNull = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") return null
+    const num = Number(value)
+    return Number.isFinite(num) ? num : null
+  }
+
+  return {
+    roomId: typeof raw.roomId === "string" ? raw.roomId : "",
+    roomTypeName: typeof raw.roomTypeName === "string" ? raw.roomTypeName : "",
+    description: typeof raw.description === "string" ? raw.description : null,
+    maxOccupancy: Number.isFinite(Number(raw.maxOccupancy)) ? Number(raw.maxOccupancy) : 2,
+    basePrice: Number.isFinite(Number(raw.basePrice)) ? Number(raw.basePrice) : 0,
+    discountedPrice: parseNumberOrNull(raw.discountedPrice),
+    bedType: typeof raw.bedType === "string" ? raw.bedType : "",
+    roomSizeSqm: parseNumberOrNull(raw.roomSizeSqm),
+    amenities: Array.isArray(raw.amenities) ? raw.amenities.filter((x): x is string => typeof x === "string") : [],
+    mainImageUrl: typeof raw.mainImageUrl === "string" ? raw.mainImageUrl : "",
+    galleryImageUrls: Array.isArray(raw.galleryImageUrls)
+      ? raw.galleryImageUrls.filter((x): x is string => typeof x === "string")
+      : [],
+  }
+}
+
+function buildRoomPayloadFromForm() {
+  const roomSize = parseNumericInput(editForm.value.roomSize)
+  const basePrice = parseNumericInput(editForm.value.price)
+  const discountedPrice = editForm.value.promotionEnabled
+    ? parseNumericInput(editForm.value.promotionPrice)
+    : null
+  const amenities = editForm.value.amenities.map((a) => a.trim()).filter(Boolean)
+
+  if (!editForm.value.roomType.trim()) {
+    createError.value = "Please enter room type."
+    return null
+  }
+  if (!Number.isFinite(roomSize)) {
+    createError.value = "Please enter valid room size (sqm)."
+    return null
+  }
+  if (!Number.isInteger(roomSize)) {
+    createError.value = "Room size must be a whole number."
+    return null
+  }
+  if (roomSize < 0) {
+    createError.value = "Room size cannot be negative."
+    return null
+  }
+  if (roomSize === 0) {
+    createError.value = "Room size must be greater than 0."
+    return null
+  }
+  if (!Number.isFinite(basePrice)) {
+    createError.value = "Please enter valid price per night."
+    return null
+  }
+  if (basePrice < 0) {
+    createError.value = "Price per night cannot be negative."
+    return null
+  }
+  if (basePrice === 0) {
+    createError.value = "Price per night must be greater than 0."
+    return null
+  }
+  if (editForm.value.promotionEnabled) {
+    if (!Number.isFinite(discountedPrice ?? NaN) || (discountedPrice ?? 0) < 0) {
+      createError.value = "Please enter valid promotion price."
+      return null
+    }
+    if ((discountedPrice ?? 0) > basePrice) {
+      createError.value = "Promotion price must be less than or equal to base price."
+      return null
+    }
+  }
+  if (!editForm.value.roomDescription.trim()) {
+    createError.value = "Please enter room description."
+    return null
+  }
+  if (!editForm.value.roomMainImageUrl.trim()) {
+    createError.value = "Please upload main image."
+    return null
+  }
+  if (editForm.value.roomGalleryUrls.length < 4) {
+    createError.value = "Image gallery must contain at least 4 images."
+    return null
+  }
+
+  return {
+    roomTypeName: editForm.value.roomType.trim(),
+    description: editForm.value.roomDescription.trim() || null,
+    maxOccupancy: Number(editForm.value.guests),
+    basePrice,
+    discountedPrice: editForm.value.promotionEnabled ? discountedPrice : null,
+    bedType: editForm.value.bedType,
+    roomSizeSqm: roomSize,
+    amenities,
+    mainImageUrl: editForm.value.roomMainImageUrl.trim(),
+    galleryImageUrls: [...editForm.value.roomGalleryUrls],
+  }
+}
+
+async function onCreateRoom() {
+  createError.value = ""
+  const payload = buildRoomPayloadFromForm()
+  if (!payload) return
+
+  isSubmittingCreate.value = true
+  try {
+    await api.post("/api/v1/admin/rooms", payload)
+    await loadRooms()
+    closeModal()
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status
+      if (status === 403) {
+        createError.value = "You do not have permission to create rooms. Please sign in with an admin account."
+      } else if (status === 401) {
+        createError.value = "Your session has expired. Please sign in again."
+      } else {
+        createError.value = error.response?.data?.message || "Create room failed."
+      }
+    } else {
+      createError.value = "Create room failed."
+    }
+  } finally {
+    isSubmittingCreate.value = false
+  }
+}
+
+async function loadRoomDetail(roomId: string) {
+  isLoadingEditDetail.value = true
+  createError.value = ""
+  try {
+    const { data } = await api.get<unknown>(`/api/v1/admin/rooms/${roomId}`)
+    const detail = parseRoomDetailLenient(data)
+    const normalizedGallery = (detail.galleryImageUrls ?? [])
+      .map((url) => url.trim())
+      .filter(Boolean)
+
+    editForm.value = {
+      ...editForm.value,
+      roomType: detail.roomTypeName,
+      roomSize: detail.roomSizeSqm === null || detail.roomSizeSqm === undefined ? "" : String(detail.roomSizeSqm),
+      bedType: detail.bedType ?? "single bed",
+      guests: String(detail.maxOccupancy),
+      price: toEditFormPrice(detail.basePrice),
+      promotionEnabled: detail.discountedPrice !== null && detail.discountedPrice !== undefined,
+      promotionPrice: detail.discountedPrice !== null && detail.discountedPrice !== undefined
+        ? toEditFormPrice(detail.discountedPrice)
+        : "",
+      roomDescription: detail.description ?? "",
+      roomMainImageUrl: detail.mainImageUrl ?? "",
+      roomGalleryUrls: normalizedGallery,
+      amenities: detail.amenities.length > 0 ? detail.amenities : [""],
+    }
+  } catch (error) {
+    const hasUsableRoomData = Boolean(editForm.value.roomType.trim())
+      || Boolean(editForm.value.roomMainImageUrl.trim())
+      || editForm.value.roomGalleryUrls.length > 0
+    if (!hasUsableRoomData) {
+      createError.value = extractApiErrorMessage(error, "Unable to load room details.")
+    }
+  } finally {
+    isLoadingEditDetail.value = false
+  }
+}
+
+async function onUpdateRoom() {
+  if (!selectedRoom.value) return
+  createError.value = ""
+  const payload = buildRoomPayloadFromForm()
+  if (!payload) return
+
+  isSubmittingUpdate.value = true
+  try {
+    await api.put(`/api/v1/admin/rooms/${selectedRoom.value.roomId}`, payload)
+    await loadRooms()
+    closeModal()
+  } catch (error) {
+    createError.value = extractApiErrorMessage(error, "Update room failed.")
+  } finally {
+    isSubmittingUpdate.value = false
+  }
+}
+
+async function onDeleteRoom() {
+  if (!selectedRoom.value) return
+
+  createError.value = ""
+  isSubmittingDelete.value = true
+  try {
+    await api.delete(`/api/v1/admin/rooms/${selectedRoom.value.roomId}`)
+    await loadRooms()
+    isDeleteModalOpen.value = false
+    closeModal()
+  } catch (error) {
+    createError.value = extractApiErrorMessage(error, "Delete room failed.")
+  } finally {
+    isSubmittingDelete.value = false
+  }
+}
+
+function formatMoney(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "-"
+  return Number(value).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+function formatRoomSize(value: number | null | undefined): string {
+  if (value === null || value === undefined) return "-"
+  return `${Number(value).toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })} sqm`
+}
+
+function compareRoomNumberForSort(a: string, b: string): number {
+  const empty = (s: string) => !s.trim()
+  if (empty(a) && empty(b)) return 0
+  if (empty(a)) return 1
+  if (empty(b)) return -1
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
+}
+
+function extractApiErrorMessage(error: unknown, fallback: string): string {
+  if (!axios.isAxiosError(error)) return fallback
+  if (!error.response) {
+    return "Cannot reach the server. Check that the API is running and your network connection."
+  }
+  const status = error.response.status
+  const data = error.response.data
+  if (typeof data === "object" && data !== null && "message" in data) {
+    const msg = (data as { message?: unknown }).message
+    if (typeof msg === "string" && msg.trim()) return msg
+  }
+  if (status === 401) return "Your session has expired. Please sign in again."
+  if (status === 403) return "You do not have permission to view rooms. Please sign in with an admin account."
+  if (status === 404) return "Room list API was not found. Is the backend running the latest version?"
+  if (status && status >= 500) return "Server error while loading rooms. Please try again later."
+  return fallback
+}
+
+async function loadRooms() {
+  isLoadingRows.value = true
+  rowsError.value = ""
+  try {
+    const { data } = await api.get<unknown>("/api/v1/admin/rooms")
+    if (!Array.isArray(data)) {
+      rows.value = []
+      rowsError.value = "Unexpected data format from room list API."
+      return
+    }
+    const mapped: RoomRow[] = data.map((raw, index) => {
+      const room = typeof raw === "object" && raw !== null ? (raw as Record<string, unknown>) : {}
+      const roomId = typeof room.roomId === "string" && room.roomId.trim() ? room.roomId : `row-${index}`
+      const roomNumber =
+        typeof room.roomNumber === "string" && room.roomNumber.trim() ? room.roomNumber.trim() : ""
+      const roomType = typeof room.roomType === "string" && room.roomType.trim() ? room.roomType : "-"
+      const bedType = typeof room.bedType === "string" && room.bedType.trim() ? room.bedType : "-"
+      const imageUrl = typeof room.imageUrl === "string" && room.imageUrl.trim() ? room.imageUrl : "/loginimage.svg"
+
+      const guestsNum = Number(room.guests)
+      const priceNum = Number(room.price)
+      const promotionNum = room.promotionPrice === null || room.promotionPrice === undefined
+        ? null
+        : Number(room.promotionPrice)
+      const roomSizeNum = room.roomSizeSqm === null || room.roomSizeSqm === undefined
+        ? null
+        : Number(room.roomSizeSqm)
+
+      return {
+        roomId,
+        roomNumber,
+        roomType,
+        roomSize: Number.isFinite(roomSizeNum) ? formatRoomSize(roomSizeNum) : "-",
+        bedType,
+        guests: Number.isFinite(guestsNum) ? String(guestsNum) : "-",
+        price: Number.isFinite(priceNum) ? formatMoney(priceNum) : "-",
+        promotionPrice: Number.isFinite(promotionNum) ? formatMoney(promotionNum) : "-",
+        imageUrl,
+      }
+    })
+    mapped.sort((a, b) => compareRoomNumberForSort(a.roomNumber, b.roomNumber))
+    rows.value = mapped
+  } catch (error) {
+    rows.value = []
+    rowsError.value = extractApiErrorMessage(error, "Unable to load room data.")
+  } finally {
+    isLoadingRows.value = false
+  }
+}
+
+onMounted(() => {
+  void loadRooms()
+  if (route.query.create === "1") {
+    openCreate()
+    void router.replace({ name: "admin-room-property", query: {} })
+  }
+})
 </script>
 
 <template>
@@ -145,6 +666,8 @@ function removeAmenity(idx: number) {
     </header>
 
     <main class="flex min-h-0 flex-1 flex-col px-4 py-8 sm:px-8 lg:px-[60px] lg:pt-12 lg:pb-16">
+      <p v-if="rowsError" class="mb-3 font-[Inter] text-[14px] leading-[21px] text-red-700">{{ rowsError }}</p>
+      <p v-else-if="isLoadingRows" class="mb-3 font-[Inter] text-[14px] leading-[21px] text-[#646D89]">Loading rooms...</p>
       <article class="w-full overflow-x-auto rounded-[4px] border border-transparent bg-transparent">
         <table class="w-full min-w-[1080px] table-fixed border-collapse">
           <thead>
@@ -189,8 +712,8 @@ function removeAmenity(idx: number) {
 
           <tbody>
             <tr
-              v-for="(row, index) in filteredRows"
-              :key="index"
+              v-for="row in pagedItems"
+              :key="row.roomId"
               class="cursor-pointer border-b border-[#E4E6ED] bg-white transition-colors hover:bg-[#F6F7FC]"
               @click="openEdit(row)"
             >
@@ -224,65 +747,88 @@ function removeAmenity(idx: number) {
         </table>
       </article>
 
-      <nav class="mt-10 flex w-full items-center justify-center gap-2" aria-label="Pagination">
-        <button type="button" class="flex size-8 items-center justify-center rounded-[4px] opacity-50" aria-label="Previous page">
-          <span class="text-[#D6D9E4]" aria-hidden="true">‹</span>
-        </button>
-
-        <button
-          type="button"
-          class="size-8 rounded-[4px] border border-[#D5DFDA] bg-white text-center text-base font-semibold leading-4 text-[#5D7B6A]"
-          aria-current="page"
-        >
-          1
-        </button>
-
-        <button
-          v-for="n in [2, 3, 4, 5]"
-          :key="n"
-          type="button"
-          class="size-8 rounded-[4px] text-center text-base font-semibold leading-4 text-[#C8CCDB]"
-        >
-          {{ n }}
-        </button>
-
-        <button type="button" class="flex size-8 items-center justify-center rounded-[4px]" aria-label="Next page">
-          <span class="text-[#9AA1B9]" aria-hidden="true">›</span>
-        </button>
-      </nav>
+      <AdminTablePagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="totalItems"
+        @update:current-page="setPage"
+      />
     </main>
   </section>
 
   <section v-else class="flex min-h-0 flex-1 flex-col bg-[#F6F7FC]">
     <header
-      class="box-border flex h-[80px] w-full shrink-0 flex-row items-center gap-4 border-b border-[#E4E6ED] bg-white px-4 sm:px-8 lg:px-[60px]"
+      class="box-border flex min-h-[80px] w-full shrink-0 flex-wrap items-center gap-3 border-b border-[#E4E6ED] bg-white px-4 py-4 sm:gap-4 sm:px-8 sm:py-0 lg:px-[60px]"
     >
-      <button
-        type="button"
-        class="flex size-10 items-center justify-center rounded-[4px] hover:bg-[#F6F7FC]"
-        aria-label="Back"
-        @click="closeModal"
-      >
-        <ArrowLeft class="size-6 text-[#9AA1B9]" :stroke-width="2" aria-hidden="true" />
-      </button>
+      <template v-if="isCreating">
+        <h2 class="min-w-0 flex-1 font-[Inter] text-[20px] leading-[30px] font-semibold tracking-[-0.02em] text-[#2A2E3F]">
+          Create New Room
+        </h2>
+        <button
+          type="button"
+          class="h-12 rounded-[4px] border border-[#E76B39] px-8 font-[Open Sans] text-[16px] leading-[16px] font-semibold text-[#E76B39] transition-colors hover:bg-[#F6E9E5]"
+          aria-label="Cancel create room"
+          @click="closeModal"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="h-12 rounded-[4px] bg-[#C14817] px-8 font-[Open Sans] text-[16px] leading-[16px] font-semibold text-white transition-colors hover:bg-[#8B3210]"
+          aria-label="Create room"
+          :disabled="isSubmittingCreate"
+          @click="onCreateRoom"
+        >
+          {{ isSubmittingCreate ? "Creating..." : "Create" }}
+        </button>
+      </template>
 
-      <h2 class="min-w-0 flex-1 font-[Inter] text-[20px] leading-[30px] font-semibold tracking-[-0.02em] text-[#2A2E3F]">
-        {{ isCreating ? "Room & Property" : selectedRoom?.roomType || "Room & Property" }}
-      </h2>
-
-      <button
-        type="button"
-        class="h-12 w-[121px] rounded-[4px] bg-[#C14817] font-[Open Sans] text-[16px] leading-[16px] font-semibold text-white transition-colors hover:bg-[#8B3210]"
-        aria-label="Update room"
-        @click="closeModal"
-      >
-        Update
-      </button>
+      <template v-else>
+        <button
+          type="button"
+          class="flex size-10 items-center justify-center rounded-[4px] hover:bg-[#F6F7FC]"
+          aria-label="Back"
+          @click="closeModal"
+        >
+          <ArrowLeft class="size-6 text-[#9AA1B9]" :stroke-width="2" aria-hidden="true" />
+        </button>
+        <h2 class="min-w-0 flex-1 font-[Inter] text-[20px] leading-[30px] font-semibold tracking-[-0.02em] text-[#2A2E3F]">
+          {{ selectedRoom?.roomType || "Room & Property" }}
+        </h2>
+        <button
+          type="button"
+          class="h-12 w-[121px] rounded-[4px] bg-[#C14817] font-[Open Sans] text-[16px] leading-[16px] font-semibold text-white transition-colors hover:bg-[#8B3210]"
+          aria-label="Update room"
+          :disabled="isSubmittingUpdate || isSubmittingDelete || isLoadingEditDetail"
+          @click="onUpdateRoom"
+        >
+          {{ isSubmittingUpdate ? "Updating..." : "Update" }}
+        </button>
+      </template>
     </header>
 
     <section class="px-4 py-8 sm:px-8 lg:px-[60px] lg:pt-12 lg:pb-16">
-      <section class="w-full max-w-[1080px] rounded-[4px] border border-[#E4E6ED] bg-[#FFFFFF]">
-        <form class="flex flex-col gap-[40px] p-[40px_80px_60px]" @submit.prevent>
+      <section class="w-full rounded-[4px] border border-[#E4E6ED] bg-[#FFFFFF]">
+        <form class="flex flex-col gap-[40px] px-4 py-8 sm:px-8 lg:px-20 lg:py-10 lg:pb-[60px]" @submit.prevent>
+        <input
+          ref="mainImageInputRef"
+          type="file"
+          class="sr-only"
+          accept="image/jpeg,image/png,image/webp"
+          tabindex="-1"
+          @change="onMainImageFileChange"
+        />
+        <input
+          ref="galleryImageInputRef"
+          type="file"
+          class="sr-only"
+          accept="image/jpeg,image/png,image/webp"
+          tabindex="-1"
+          @change="onGalleryImageFileChange"
+        />
+        <p v-if="createError" class="body-2 text-red-700">{{ createError }}</p>
+        <p v-if="imageUploadError" class="body-2 text-red-700">{{ imageUploadError }}</p>
+        <p v-if="isLoadingEditDetail && !isCreating" class="body-2 text-[#646D89]">Loading room details...</p>
         <section class="flex w-full flex-col gap-[12px]">
           <h3 class="font-[Inter] text-[20px] leading-[30px] font-semibold tracking-[-0.02em] text-[#9AA1B9]">
             Basic Information
@@ -293,7 +839,7 @@ function removeAmenity(idx: number) {
             <!-- Room Type (full width) -->
             <section class="flex flex-col gap-[4px] w-full">
               <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-room-type">
-                Room Type *
+                Room Type <span class="text-[#B61515]">*</span>
               </label>
               <input
                 id="edit-room-type"
@@ -304,75 +850,108 @@ function removeAmenity(idx: number) {
             </section>
 
             <!-- Room size + Bed type -->
-            <section class="flex w-full items-start gap-[40px]">
-              <section class="flex w-[440px] flex-col gap-[4px]">
+            <section class="grid w-full grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-x-10">
+              <section class="flex w-full flex-col gap-[4px]">
                 <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-room-size">
-                  Room size(sqm) *
+                  Room size(sqm) <span class="text-[#B61515]">*</span>
                 </label>
                 <input
                   id="edit-room-size"
                   v-model="editForm.roomSize"
                   type="text"
+                  inputmode="numeric"
+                  @keydown="preventNegativeSign"
+                  @input="editForm.roomSize = keepIntegerDigitsOnly(editForm.roomSize)"
                   class="h-[48px] w-full rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
                 />
               </section>
 
-              <section class="flex w-[440px] flex-col gap-[4px]">
+              <section class="flex w-full flex-col gap-[4px]">
                 <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-bed-type">
-                  Bed type *
+                  Bed type <span class="text-[#B61515]">*</span>
                 </label>
-                <select
-                  id="edit-bed-type"
-                  v-model="editForm.bedType"
-                  class="h-[48px] w-full appearance-none rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
-                >
-                  <option>Double bed</option>
-                  <option>Single bed</option>
-                  <option>Triple bed</option>
-                </select>
+                <div class="relative">
+                  <select
+                    id="edit-bed-type"
+                    v-model="editForm.bedType"
+                    class="h-[48px] w-full appearance-none rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-10 font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
+                  >
+                    <option value="single bed">Single bed</option>
+                    <option value="double bed">Double bed</option>
+                    <option value="double bed (king size)">Double bed (king size)</option>
+                    <option value="twin bed">Twin bed</option>
+                  </select>
+                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#646D89]" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5.83 8.33L10 12.5L14.17 8.33" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                </div>
               </section>
             </section>
 
             <!-- Guest(s) -->
-            <section class="flex w-full items-start gap-[40px]">
-              <section class="flex w-[440px] flex-col gap-[4px]">
+            <section class="grid w-full grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-x-10">
+              <section class="flex w-full flex-col gap-[4px]">
                 <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-guests">
-                  Guest(s) *
+                  Guest(s) <span class="text-[#B61515]">*</span>
                 </label>
-                <input
-                  id="edit-guests"
-                  v-model="editForm.guests"
-                  type="number"
-                  min="1"
-                  class="h-[48px] w-full rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
-                />
+                <div class="relative">
+                  <select
+                    id="edit-guests"
+                    v-model="editForm.guests"
+                    class="h-[48px] w-full appearance-none rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-10 font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
+                  >
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                  </select>
+                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#646D89]" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" class="h-5 w-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5.83 8.33L10 12.5L14.17 8.33" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                </div>
               </section>
-              <div class="w-[440px]" aria-hidden="true" />
+              <div class="hidden lg:block" aria-hidden="true" />
             </section>
 
             <!-- Price + Promotion -->
-            <section class="flex w-full items-start gap-[40px]">
-              <section class="flex w-[440px] flex-col gap-[4px]">
+            <section class="grid w-full grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-x-10">
+              <section class="flex w-full flex-col gap-[4px]">
                 <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-price">
-                  Price per Night(THB) *
+                  Price per Night(THB) <span class="text-[#B61515]">*</span>
                 </label>
                 <input
                   id="edit-price"
                   v-model="editForm.price"
                   type="text"
+                  @keydown="preventNegativeSign"
+                  @input="editForm.price = stripNegativeSign(editForm.price)"
                   class="h-[48px] w-full rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
                 />
               </section>
 
-              <section class="flex w-[440px] flex-col gap-[4px]">
-                <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-promotion-price">
+              <section class="flex w-full items-end gap-4">
+                <label class="flex items-center gap-3 pb-3 font-[Inter] text-[16px] leading-[24px] font-normal text-[#646D89]" for="promotion-enabled">
+                  <input
+                    id="promotion-enabled"
+                    v-model="editForm.promotionEnabled"
+                    type="checkbox"
+                    class="promotion-checkbox size-6 appearance-none rounded-[4px]"
+                  />
                   Promotion Price
                 </label>
                 <input
                   id="edit-promotion-price"
                   v-model="editForm.promotionPrice"
                   type="text"
-                  class="h-[48px] w-full rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
+                  :disabled="!editForm.promotionEnabled"
+                  @keydown="preventNegativeSign"
+                  @input="editForm.promotionPrice = stripNegativeSign(editForm.promotionPrice)"
+                  class="h-[48px] flex-1 rounded-[4px] border border-[#D6D9E4] pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9] disabled:bg-[#F1F2F6] disabled:text-[#9AA1B9]"
                 />
               </section>
             </section>
@@ -382,7 +961,7 @@ function removeAmenity(idx: number) {
         <section class="flex w-full flex-col gap-[12px]">
           <section class="flex flex-col gap-[4px]">
             <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" for="edit-room-description">
-              Room Description *
+              Room Description <span class="text-[#B61515]">*</span>
             </label>
             <textarea id="edit-room-description" v-model="editForm.roomDescription" class="min-h-[96px] w-full resize-none rounded-[4px] border border-[#D6D9E4] bg-white px-[12px] py-[12px] outline-none focus:border-[#9AA1B9]" />
           </section>
@@ -393,47 +972,96 @@ function removeAmenity(idx: number) {
                 Room Image
               </h3>
 
-              <section class="relative w-full">
-                <img :src="editForm.roomMainImageUrl" alt="Main room image preview" class="h-[240px] w-[240px] rounded-[4px] border border-[#E4E6ED] bg-[#F1F2F6] object-cover" />
+              <section class="relative w-fit">
+                <template v-if="editForm.roomMainImageUrl">
+                  <img :src="editForm.roomMainImageUrl" alt="Main room image preview" class="h-[240px] w-[240px] rounded-[4px] border border-[#E4E6ED] bg-[#F1F2F6] object-cover" />
+                  <button
+                    type="button"
+                    class="absolute -right-2 -top-2 flex size-[24px] items-center justify-center rounded-full bg-[#B61515] text-white"
+                    aria-label="Remove main image"
+                    @click="editForm.roomMainImageUrl = ''"
+                  >
+                    <X class="size-[14px]" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    class="mt-3 font-[Nunito] text-[14px] font-medium leading-[21px] text-[#E76B39] underline-offset-2 hover:underline"
+                    :disabled="isUploadingRoomImage"
+                    @click="openMainImagePicker"
+                  >
+                    Change photo
+                  </button>
+                </template>
                 <button
+                  v-else
                   type="button"
-                  class="absolute right-[20px] top-[-4px] flex size-[24px] items-center justify-center rounded-full bg-[#B61515] text-white"
-                  aria-label="Remove main image"
-                  @click="editForm.roomMainImageUrl = '/loginimage.svg'"
+                  class="flex h-[240px] w-[240px] flex-col items-center justify-center gap-2 rounded-[4px] bg-[#F1F2F6] disabled:opacity-60"
+                  aria-label="Upload main image"
+                  :disabled="isUploadingRoomImage"
+                  @click="openMainImagePicker"
                 >
-                  <X class="size-[14px]" aria-hidden="true" />
+                  <span class="text-2xl leading-none text-[#E76B39]">{{ isUploadingRoomImage ? "…" : "+" }}</span>
+                  <span class="font-[Nunito] text-[14px] leading-[21px] font-medium text-[#E76B39]">{{
+                    isUploadingRoomImage ? "Uploading…" : "Upload photo"
+                  }}</span>
                 </button>
               </section>
             </section>
 
             <section class="flex flex-col gap-[16px]">
               <h4 class="font-[Inter] text-[20px] leading-[30px] font-semibold tracking-[-0.02em] text-[#9AA1B9]">
-                Image Gallery(At least 4 pictures) *
+                Image Gallery(At least 4 pictures) <span class="text-[#B61515]">*</span>
               </h4>
               <section class="flex flex-wrap gap-[24px]">
-                <section v-for="(url, idx) in editForm.roomGalleryUrls" :key="idx" class="relative">
-                  <img :src="url" :alt="`Gallery image ${idx + 1}`" class="h-[167px] w-[167px] rounded-[4px] border border-[#E4E6ED] bg-[#F1F2F6] object-cover" />
+                <section
+                  v-for="(url, idx) in editForm.roomGalleryUrls"
+                  :key="idx"
+                  class="flex w-[167px] flex-col items-center gap-1"
+                >
+                  <section
+                    class="relative inline-flex cursor-grab rounded-[4px] transition-all active:cursor-grabbing"
+                    :class="[
+                      draggedGalleryIndex === idx ? 'opacity-40' : '',
+                      dragOverGalleryIndex === idx && draggedGalleryIndex !== idx ? 'ring-2 ring-[#E76B39] ring-offset-2' : '',
+                    ]"
+                    draggable="true"
+                    @dragstart="onGalleryDragStart(idx)"
+                    @dragover="onGalleryDragOver($event, idx)"
+                    @dragleave="onGalleryDragLeave"
+                    @drop.prevent="onGalleryDrop(idx)"
+                    @dragend="onGalleryDragEnd"
+                  >
+                    <img :src="url" :alt="`Gallery image ${idx + 1}`" class="h-[167px] w-[167px] rounded-[4px] border border-[#E4E6ED] bg-[#F1F2F6] object-cover" />
+                    <button
+                      type="button"
+                      class="absolute -right-2 -top-2 flex size-[24px] items-center justify-center rounded-full bg-[#AF2758] text-white"
+                      aria-label="Remove gallery image"
+                      @click="removeGalleryImage(idx)"
+                    >
+                      <X class="size-[14px]" aria-hidden="true" />
+                    </button>
+                  </section>
                   <button
                     type="button"
-                    class="absolute right-[20px] top-[-3px] flex size-[24px] items-center justify-center rounded-full bg-[#AF2758] text-white"
-                    aria-label="Remove gallery image"
-                    @click="editForm.roomGalleryUrls.splice(idx, 1, '/loginimage.svg')"
+                    class="font-[Nunito] text-[12px] font-medium leading-[18px] text-[#E76B39] underline-offset-2 hover:underline disabled:opacity-60"
+                    :disabled="isUploadingRoomImage"
+                    @click="openGalleryPickerForReplace(idx)"
                   >
-                    <X class="size-[14px]" aria-hidden="true" />
+                    Change photo
                   </button>
                 </section>
 
                 <button
                   type="button"
-                  class="flex h-[167px] w-[167px] items-center justify-center rounded-[4px] border border-dashed border-[#E4E6ED] bg-[#FFFFFF]"
-                  aria-label="Upload photo"
+                  class="flex h-[167px] w-[167px] flex-col items-center justify-center gap-2 rounded-[4px] bg-[#F1F2F6] disabled:opacity-60"
+                  aria-label="Upload gallery image"
+                  :disabled="isUploadingRoomImage"
+                  @click="openGalleryPickerForNew"
                 >
-                  <section class="flex h-[53px] w-[87px] flex-col items-center justify-between gap-[8px]">
-                    <span class="flex size-[24px] items-center justify-center rounded-full border-2 border-[#E76B39] text-[#E76B39] font-bold leading-none">
-                      +
-                    </span>
-                    <span class="font-[Nunito] text-[14px] leading-[21px] font-medium text-[#E76B39]">Upload photo</span>
-                  </section>
+                  <span class="text-2xl leading-none text-[#E76B39]">{{ isUploadingRoomImage ? "…" : "+" }}</span>
+                  <span class="font-[Nunito] text-[14px] leading-[21px] font-medium text-[#E76B39]">{{
+                    isUploadingRoomImage ? "Uploading…" : "Upload photo"
+                  }}</span>
                 </button>
               </section>
             </section>
@@ -446,25 +1074,36 @@ function removeAmenity(idx: number) {
           </h3>
 
           <section class="flex flex-col gap-[24px]">
-            <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]">
-              Amenitiy *
-            </label>
-
             <section class="flex flex-col gap-[12px]">
               <section
-                v-for="(amenity, idx) in editForm.amenities"
-                :key="`${amenity}-${idx}`"
-                class="flex items-center gap-[24px]"
+                v-for="(_, idx) in editForm.amenities"
+                :key="`amenity-row-${idx}`"
+                draggable="true"
+                class="flex items-end gap-[24px] rounded-[4px] transition-all"
+                :class="[
+                  draggedAmenityIndex === idx ? 'opacity-40' : '',
+                  dragOverAmenityIndex === idx && draggedAmenityIndex !== idx ? 'bg-[#F6F7FC] ring-1 ring-[#E76B39]' : '',
+                ]"
+                @dragstart="onAmenityDragStart(idx)"
+                @dragover="onAmenityDragOver($event, idx)"
+                @dragleave="onAmenityDragLeave"
+                @drop.prevent="onAmenityDrop(idx)"
+                @dragend="onAmenityDragEnd"
               >
-                <input
-                  type="text"
-                  :aria-label="`Amenity ${idx + 1}`"
-                  class="h-[48px] flex-1 rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
-                  v-model="editForm.amenities[idx]"
-                />
+                <span class="hidden shrink-0 mb-[12px] cursor-grab text-[#E76B39] active:cursor-grabbing lg:inline" aria-label="Drag to reorder">::</span>
+                <section class="flex min-w-0 w-full flex-1 flex-col gap-1">
+                  <label class="font-[Inter] text-[16px] leading-[24px] font-normal text-[#2A2E3F]" :for="`amenity-input-${idx}`">Amenitiy</label>
+                  <input
+                    :id="`amenity-input-${idx}`"
+                    type="text"
+                    :aria-label="`Amenity ${idx + 1}`"
+                    class="box-border h-[48px] w-full min-w-0 rounded-[4px] border border-[#D6D9E4] bg-white pl-[12px] pr-[16px] font-[Inter] text-[16px] leading-[24px] text-[#2A2E3F] outline-none focus:border-[#9AA1B9]"
+                    v-model="editForm.amenities[idx]"
+                  />
+                </section>
                 <button
                   type="button"
-                  class="flex h-[24px] w-[67px] items-center justify-center rounded-[4px] text-[16px] font-semibold text-[#E76B39] hover:bg-[#F6F7FC]"
+                  class="mb-[12px] flex h-[24px] w-[67px] items-center justify-center rounded-[4px] text-[16px] font-semibold text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
                   aria-label="Delete amenity"
                   @click="removeAmenity(idx)"
                 >
@@ -477,26 +1116,94 @@ function removeAmenity(idx: number) {
               type="button"
               class="self-start rounded-[4px] border border-[#E76B39] bg-white px-[12px] py-[8px] text-[16px] font-semibold text-[#E76B39] transition-colors hover:bg-[#F6E9E5]"
               aria-label="Add Amenity"
-              @click="editForm.amenities.push('New Amenity')"
+              @click="addAmenity"
             >
               + Add Amenity
             </button>
           </section>
         </section>
 
-        <section class="flex justify-end">
+        <section v-if="!isCreating" class="flex justify-end">
           <button
             type="button"
-            class="h-12 w-[121px] rounded-[4px] border border-[#E76B39] bg-white font-[Open Sans] text-[16px] leading-[16px] font-semibold text-[#E76B39] transition-colors hover:bg-[#F6E9E5]"
+            class="h-12 w-[121px] rounded-[4px] border border-red-600 bg-white font-[Open Sans] text-[16px] leading-[16px] font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Delete room"
-            @click="closeModal"
+            :disabled="isSubmittingDelete || isSubmittingUpdate || isLoadingEditDetail"
+            @click="openDeleteModal"
           >
-            Delete Room
+            {{ isSubmittingDelete ? "Deleting..." : "Delete Room" }}
           </button>
         </section>
         </form>
       </section>
     </section>
+
+    <section
+      v-if="isDeleteModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-room-modal-title"
+    >
+      <article class="w-full max-w-[631px] overflow-hidden rounded-[4px] bg-white shadow-[2px_2px_12px_rgba(64,50,133,0.12)]">
+        <header class="flex h-[56px] items-center border-b border-[#E4E6ED] px-6 py-2">
+          <h3 id="delete-room-modal-title" class="flex-1 font-[Inter] text-[20px] leading-[30px] font-semibold tracking-[-0.02em] text-black">
+            Delete Room
+          </h3>
+          <button
+            type="button"
+            class="flex h-10 w-[41px] items-center justify-center rounded-[4px] text-[#C8CCDB] transition-colors hover:bg-[#F6F7FC]"
+            aria-label="Close delete confirmation"
+            :disabled="isSubmittingDelete"
+            @click="closeDeleteModal"
+          >
+            <X class="size-5" :stroke-width="2" aria-hidden="true" />
+          </button>
+        </header>
+
+        <section class="flex flex-col items-end gap-6 p-6">
+          <section class="w-full">
+            <p class="font-[Inter] text-[16px] leading-[24px] font-normal tracking-[-0.02em] text-[#646D89]">
+              Are you sure you want to delete this room?
+            </p>
+          </section>
+
+          <section class="flex w-full max-w-[380px] gap-4">
+            <button
+              type="button"
+              class="h-12 w-[220px] rounded-[4px] border border-[#E76B39] bg-white px-8 font-[Open Sans] text-[16px] leading-[16px] font-semibold text-[#E76B39] transition-colors hover:bg-[#F6E9E5]"
+              :disabled="isSubmittingDelete"
+              @click="closeDeleteModal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="h-12 w-[144px] rounded-[4px] bg-red-600 px-8 font-[Open Sans] text-[16px] leading-[16px] font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+              :disabled="isSubmittingDelete"
+              @click="onDeleteRoom"
+            >
+              {{ isSubmittingDelete ? "Deleting..." : "Delete" }}
+            </button>
+          </section>
+        </section>
+      </article>
+    </section>
   </section>
 </template>
+
+<style scoped>
+.promotion-checkbox {
+  border: 1px solid #f3b59c;
+  background-color: #ffffff;
+}
+
+.promotion-checkbox:checked {
+  border-color: #f3b59c;
+  background-color: #e76b39;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 8.5l3 3L13 4.5'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+}
+</style>
 

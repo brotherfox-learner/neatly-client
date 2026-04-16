@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import type { PricingType, ChargeUnit } from '@/api/booking'
 
 export interface ExtraService {
   id: string
@@ -7,6 +8,20 @@ export interface ExtraService {
   description: string | null
   type: string
   price: number
+  pricingType: PricingType
+  chargeUnit: ChargeUnit
+}
+
+export function calcServicePrice(
+  service: ExtraService,
+  nights: number,
+  guests: number,
+  rooms: number,
+): number {
+  const pricingMultiplier =
+    service.pricingType === 'per_day' || service.pricingType === 'per_night' ? nights : 1
+  const chargeMultiplier = service.chargeUnit === 'per_person' ? guests : rooms
+  return service.price * pricingMultiplier * chargeMultiplier
 }
 
 export interface GuestInfo {
@@ -54,6 +69,11 @@ export const useBookingStore = defineStore('booking', () => {
 
   // ── Result ──────────────────────────────────────────────────────────────────
   const bookingId = ref<string | null>(null)
+  const isRetrying = ref(false)
+  const savedPaymentMethodId = ref<string | null>(null)
+
+  // ── Timer ────────────────────────────────────────────────────────────────────
+  const timerStartedAt = ref<number | null>(null)
 
   // ── Computed ────────────────────────────────────────────────────────────────
   const totalNights = computed(() => {
@@ -69,7 +89,10 @@ export const useBookingStore = defineStore('booking', () => {
   )
 
   const extrasTotal = computed(() =>
-    selectedExtras.value.reduce((sum, s) => sum + s.price, 0),
+    selectedExtras.value.reduce(
+      (sum, s) => sum + calcServicePrice(s, totalNights.value, guests.value, roomCount.value),
+      0,
+    ),
   )
 
   const grandTotal = computed(() =>
@@ -124,6 +147,10 @@ export const useBookingStore = defineStore('booking', () => {
     bookingId.value = id
   }
 
+  function startTimer() {
+    timerStartedAt.value = Date.now()
+  }
+
   function reset() {
     roomTypeId.value = null
     roomTypeName.value = ''
@@ -142,6 +169,9 @@ export const useBookingStore = defineStore('booking', () => {
     discountAmount.value = 0
     paymentMethod.value = null
     bookingId.value = null
+    isRetrying.value = false
+    savedPaymentMethodId.value = null
+    timerStartedAt.value = null
   }
 
   return {
@@ -163,12 +193,17 @@ export const useBookingStore = defineStore('booking', () => {
     discountAmount,
     paymentMethod,
     bookingId,
+    isRetrying,
+    savedPaymentMethodId,
     // computed
     totalNights,
     roomSubtotal,
     selectedExtras,
     extrasTotal,
     grandTotal,
+    // timer
+    timerStartedAt,
+    startTimer,
     // actions
     setRoom,
     setGuestInfo,

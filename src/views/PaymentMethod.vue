@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { CreditCardIcon, BanknotesIcon } from '@heroicons/vue/24/outline'
 import { HandCash } from '@iconoir/vue'
 import { BriefcaseBusiness } from 'lucide-vue-next'
-import { useBookingStore } from '@/stores/booking'
-import { createBooking, createPaymentIntent } from '@/api/booking'
+import { loadStripe } from '@stripe/stripe-js'
+import type { Stripe, StripeCardNumberElement } from '@stripe/stripe-js'
+import { useBookingStore, calcServicePrice } from '@/stores/booking'
+import type { ExtraService } from '@/stores/booking'
+import { createBooking, createPaymentIntent, validatePromoCode, updatePaymentStatus } from '@/api/booking'
+import { useBookingTimer } from '@/composables/useBookingTimer'
+import BookingTimerModal from '@/components/BookingTimerModal.vue'
 
 const router = useRouter()
 const bookingStore = useBookingStore()
+const { timeLeft, isExpiredModalOpen, extendTimer } = useBookingTimer()
 
 // ── Dev mock ──────────────────────────────────────────────────────────────────
 const roomTypeName = bookingStore.roomTypeName || 'Superior Garden View'
@@ -25,11 +31,46 @@ const formatDate = (iso: string) =>
 type PaymentMethod = 'card' | 'cash'
 const selectedMethod = ref<PaymentMethod>('card')
 
-// ── Card form state ───────────────────────────────────────────────────────────
-const cardNumber = ref('')
+// ── Retry state — ดึงจาก store แล้ว reset ทันที ────────────────────────────
+const isRetrying = ref(bookingStore.isRetrying)
+bookingStore.isRetrying = false
+
+// ── Stripe split elements ─────────────────────────────────────────────────────
+let stripeInstance: Stripe | null = null
+let cardNumberEl: StripeCardNumberElement | null = null
 const cardOwner = ref('')
-const cardExpiry = ref('')
-const cardCvv = ref('')
+const stripeError = ref('')
+
+const elStyle = {
+  base: { fontSize: '16px', color: '#1a1d26', '::placeholder': { color: '#9AA1B9' } },
+}
+
+onMounted(async () => {
+  stripeInstance = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
+  if (!stripeInstance) return
+  const elements = stripeInstance.elements()
+
+  cardNumberEl = elements.create('cardNumber', { style: elStyle, showIcon: true })
+  cardNumberEl.mount('#stripe-card-number')
+  cardNumberEl.on('change', (e) => { stripeError.value = e.error?.message ?? '' })
+
+  const cardExpiryEl = elements.create('cardExpiry', { style: elStyle })
+  cardExpiryEl.mount('#stripe-card-expiry')
+
+  const cardCvcEl = elements.create('cardCvc', { style: elStyle })
+  cardCvcEl.mount('#stripe-card-cvc')
+
+  // ถ้ามาจาก Retry และมี pm_xxx → auto-confirm ด้วยบัตรเดิมได้เลย
+  if (isRetrying.value && bookingStore.savedPaymentMethodId) {
+    setTimeout(() => handleConfirm().finally(() => { isRetrying.value = false }), 0)
+  } else {
+    isRetrying.value = false
+  }
+})
+
+onUnmounted(() => {
+  cardNumberEl?.destroy()
+})
 
 // ── Promo code ────────────────────────────────────────────────────────────────
 const promoInput = ref(bookingStore.promoCode)
@@ -43,10 +84,13 @@ const applyPromo = async () => {
   promoError.value = ''
   promoSuccess.value = ''
   try {
-    // TODO: เชื่อม POST /api/v1/promotions/validate เมื่อ backend พร้อม
-    // const result = await validatePromoCode(promoInput.value, bookingStore.grandTotal)
-    // bookingStore.applyPromo(promoInput.value, result.discountAmount)
-    promoError.value = 'Promo code validation coming soon'
+    const result = await validatePromoCode(promoInput.value.trim(), bookingStore.grandTotal)
+    bookingStore.applyPromo(result.code, result.discountAmount)
+    promoInput.value = result.code
+    promoSuccess.value = `Promo applied! You save THB ${result.discountAmount.toLocaleString()}`
+  } catch (err: any) {
+    const msg = err?.response?.data?.message ?? err?.message ?? 'Invalid promo code'
+    promoError.value = msg
   } finally {
     isApplyingPromo.value = false
   }
@@ -55,6 +99,20 @@ const applyPromo = async () => {
 // ── Summary ───────────────────────────────────────────────────────────────────
 const selectedExtras = computed(() => bookingStore.selectedExtras)
 
+function serviceTotal(service: ExtraService): number {
+  return calcServicePrice(service, bookingStore.totalNights, bookingStore.guests, bookingStore.roomCount)
+}
+
+function serviceBreakdown(service: ExtraService): string {
+  const parts: string[] = []
+  if (service.pricingType === 'per_day' || service.pricingType === 'per_night') {
+    parts.push(`×${bookingStore.totalNights} nights`)
+  }
+  if (service.chargeUnit === 'per_person') parts.push(`×${bookingStore.guests} guests`)
+  else parts.push(`×${bookingStore.roomCount} room${bookingStore.roomCount > 1 ? 's' : ''}`)
+  return parts.join(' ')
+}
+
 // ── Loading state ─────────────────────────────────────────────────────────────
 const isSubmitting = ref(false)
 
@@ -62,11 +120,12 @@ const isSubmitting = ref(false)
 const handleConfirm = async () => {
   if (isSubmitting.value) return
   isSubmitting.value = true
+  stripeError.value = ''
 
   bookingStore.setPaymentMethod(selectedMethod.value)
 
-  // ถ้ามี bookingId อยู่แล้ว (กรณี Retry) → ข้าม createBooking
   try {
+    // ถ้ามี bookingId อยู่แล้ว (กรณี Retry) → ข้าม createBooking
     if (!bookingStore.bookingId) {
       const res = await createBooking({
         roomTypeId: bookingStore.roomTypeId ?? 'mock-room-type-id',
@@ -89,17 +148,49 @@ const handleConfirm = async () => {
       return
     }
 
-    // ── Card flow ──────────────────────────────────────────────────────────
-    // TODO: เมื่อ backend payment intent endpoint พร้อม ให้ uncomment และใช้ Stripe.js
-    // const { clientSecret } = await createPaymentIntent({ bookingId: bookingStore.bookingId! })
-    // const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
-    // const { error } = await stripe!.confirmCardPayment(clientSecret, { ... })
-    // if (error) { router.push('/payment-fail'); return }
+    // ── Card flow via Stripe ───────────────────────────────────────────────
+    if (!stripeInstance) {
+      stripeError.value = 'Stripe is not ready. Please refresh and try again.'
+      return
+    }
 
-    // Placeholder: สำหรับ card ให้ navigate success ก่อน จนกว่า Stripe จะถูก integrate
+    if (!cardNumberEl) {
+      stripeError.value = 'Stripe is not ready. Please refresh and try again.'
+      return
+    }
+
+    const { clientSecret } = await createPaymentIntent({ bookingId: bookingStore.bookingId! })
+
+    const paymentMethodParam = bookingStore.savedPaymentMethodId
+      ? { payment_method: bookingStore.savedPaymentMethodId }
+      : {
+          payment_method: {
+            card: cardNumberEl,
+            billing_details: { name: cardOwner.value },
+          },
+        }
+
+    const { error: stripeConfirmError, paymentIntent } = await stripeInstance.confirmCardPayment(
+      clientSecret,
+      paymentMethodParam,
+    )
+
+    if (stripeConfirmError) {
+      // เก็บ pm_xxx ไว้ใช้ตอน retry (ถ้า Stripe ออกให้แล้ว)
+      const pm = paymentIntent?.payment_method
+      if (pm) {
+        bookingStore.savedPaymentMethodId = typeof pm === 'string' ? pm : pm.id
+      }
+      stripeError.value = stripeConfirmError.message ?? 'Payment failed'
+      await updatePaymentStatus(bookingStore.bookingId!, 'FAILED').catch(() => {})
+      router.push('/payment-fail')
+      return
+    }
+
+    await updatePaymentStatus(bookingStore.bookingId!, 'PAID').catch(() => {})
     router.push('/payment-success')
   } catch (err) {
-    console.error('[BOOKING] createBooking failed', err)
+    console.error('[BOOKING] handleConfirm failed', err)
     router.push('/payment-fail')
   } finally {
     isSubmitting.value = false
@@ -112,6 +203,22 @@ const handleBack = () => {
 </script>
 
 <template>
+  <BookingTimerModal :open="isExpiredModalOpen" @extend="extendTimer" />
+
+  <!-- Retry Payment Loading Overlay -->
+  <Transition name="fade">
+    <div
+      v-if="isRetrying"
+      class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm gap-6"
+    >
+      <div class="w-14 h-14 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+      <div class="flex flex-col items-center gap-2 text-center">
+        <p class="headline-5 text-gray-800">Processing your payment...</p>
+        <p class="body-2 text-gray-500">Please do not close this window</p>
+      </div>
+    </div>
+  </Transition>
+
   <div class="mx-auto max-w-[1122px] flex flex-col lg:gap-10 lg:py-[80px]">
     <!-- ===== HEADER ===== -->
     <div class="flex flex-col gap-6 py-[24px] px-[16px] bg-[#f7f7fb] lg:gap-10 lg:p-0">
@@ -169,27 +276,31 @@ const handleBack = () => {
         </div>
 
         <!-- CARD FORM -->
-        <div v-if="selectedMethod === 'card'" class="flex flex-col gap-6 lg:gap-10">
+        <div v-show="selectedMethod === 'card'" class="flex flex-col gap-6 lg:gap-10">
           <h2 class="headline-5 text-gray-600 lg:text-gray-800">Credit Card</h2>
 
           <div class="flex flex-col gap-1">
             <label class="body-1 text-gray-900">Card Number</label>
-            <input v-model="cardNumber" class="border border-gray-400 rounded-sm p-3 pr-4" placeholder="xxxx-xxxx-xxxx-xxxx" />
+            <div id="stripe-card-number" class="border border-gray-400 rounded-sm p-3 bg-white" />
           </div>
+
+          <!-- Card Owner -->
           <div class="flex flex-col gap-1">
             <label class="body-1 text-gray-900">Card Owner</label>
-            <input v-model="cardOwner" class="border border-gray-400 rounded-sm p-3 pr-4" placeholder="Name on card" />
+            <input v-model="cardOwner" class="border border-gray-400 rounded-sm p-3" placeholder="Name on card" />
           </div>
           <div class="flex gap-10">
             <div class="flex flex-col gap-1 flex-1">
               <label class="body-1 text-gray-900">Expiry</label>
-              <input v-model="cardExpiry" class="w-full border border-gray-400 rounded-sm p-3 pr-4" placeholder="MM/YY" />
+              <div id="stripe-card-expiry" class="border border-gray-400 rounded-sm p-3 bg-white" />
             </div>
             <div class="flex flex-col gap-1 flex-1">
               <label class="body-1 text-gray-900">CVV</label>
-              <input v-model="cardCvv" class="w-full border border-gray-400 rounded-sm p-3 pr-4" placeholder="123" />
+              <div id="stripe-card-cvc" class="border border-gray-400 rounded-sm p-3 bg-white" />
             </div>
           </div>
+
+          <span v-if="stripeError" class="text-red-500 text-sm">{{ stripeError }}</span>
 
           <!-- PROMO -->
           <div class="border-t py-6">
@@ -206,7 +317,7 @@ const handleBack = () => {
         </div>
 
         <!-- CASH INFO -->
-        <div v-else class="flex flex-col gap-6 lg:gap-10">
+        <div v-show="selectedMethod === 'cash'" class="flex flex-col gap-6 lg:gap-10">
           <h2 class="headline-5 text-gray-600 lg:text-gray-800">Cash</h2>
           <div class="bg-gray-200 px-6 py-4 rounded-sm flex gap-4 items-center">
             <HandCash class="w-[50px] h-[50px] text-[#E76B39]" />
@@ -244,6 +355,7 @@ const handleBack = () => {
               <BriefcaseBusiness color="#81A08F" />
               <span class="headline-5">Booking Detail</span>
             </div>
+            <div class="bg-orange-800/60 text-orange-200 px-2 py-1 rounded-sm body-2">{{ timeLeft }}</div>
           </div>
 
           <div class="py-[24px] px-[16px] flex flex-col gap-6 lg:p-6 lg:gap-10">
@@ -274,8 +386,13 @@ const handleBack = () => {
                   <span class="body-1 font-semibold!">{{ bookingStore.roomSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
                 </div>
                 <div v-for="extra in selectedExtras" :key="extra.id" class="flex justify-between py-[12px]">
-                  <span class="body-1 text-green-300">{{ extra.name }}</span>
-                  <span class="body-1 font-semibold!">{{ extra.price.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+                  <div class="flex flex-col">
+                    <span class="body-1 text-green-300">{{ extra.name }}</span>
+                    <span v-if="extra.type?.toUpperCase() !== 'FREE'" class="text-xs text-green-400">{{ serviceBreakdown(extra) }}</span>
+                  </div>
+                  <span class="body-1 font-semibold!">
+                    {{ extra.type?.toUpperCase() === 'FREE' ? '0.00' : serviceTotal(extra).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}
+                  </span>
                 </div>
                 <div v-if="bookingStore.discountAmount > 0" class="flex justify-between py-[12px]">
                   <span class="body-1 text-green-300">Promo ({{ bookingStore.promoCode }})</span>
@@ -314,3 +431,14 @@ const handleBack = () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

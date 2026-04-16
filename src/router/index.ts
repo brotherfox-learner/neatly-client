@@ -41,6 +41,12 @@ const router = createRouter({
       component: () => import('../views/RegisterView.vue'),
     },
     {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/payment-basic',
       name: 'payment',
       component: () => import('../views/PaymentBasicInfo.vue'),
@@ -123,6 +129,12 @@ const router = createRouter({
           name: 'admin-chatbot-setup',
           component: () => import('../views/admin/AdminPlaceholderView.vue'),
           meta: { pageTitle: 'Chatbot Setup' },
+        },
+        {
+          path: 'live-chat',
+          name: 'admin-live-chat',
+          component: () => import('../views/admin/AdminLiveChatView.vue'),
+          meta: { pageTitle: 'Live Chat Responses' },
         },
       ],
     },

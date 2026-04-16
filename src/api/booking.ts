@@ -1,6 +1,9 @@
 import { api } from '@/lib/api'
 import type { ExtraService } from '@/stores/booking'
 
+export type PricingType = 'per_day' | 'per_night' | 'per_stay' | 'per_trip'
+export type ChargeUnit = 'per_person' | 'per_room'
+
 export interface CreateBookingPayload {
   roomTypeId: string
   roomCount: number
@@ -62,7 +65,23 @@ export async function getExtraServices(): Promise<ExtraService[]> {
   }
 }
 
-// TODO: เชื่อม Stripe ทีหลัง — backend endpoint ยังไม่มี
+export interface ValidatePromoResponse {
+  code: string
+  discountAmount: number
+  discountType: string
+}
+
+export async function validatePromoCode(
+  code: string,
+  orderTotal: number,
+): Promise<ValidatePromoResponse> {
+  const { data } = await api.post<ValidatePromoResponse>('/api/v1/promotions/validate', {
+    code,
+    orderTotal,
+  })
+  return data
+}
+
 export async function createPaymentIntent(
   payload: CreatePaymentIntentPayload,
 ): Promise<CreatePaymentIntentResponse> {
@@ -71,4 +90,11 @@ export async function createPaymentIntent(
     payload,
   )
   return data
+}
+
+export async function updatePaymentStatus(
+  bookingId: string,
+  status: 'PAID' | 'FAILED',
+): Promise<void> {
+  await api.patch(`/api/v1/payments/${bookingId}/status`, { status })
 }

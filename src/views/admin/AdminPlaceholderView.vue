@@ -5,6 +5,7 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader.vue"
 import AdminHotelInformationView from "./AdminHotelInformationView.vue"
 import AdminRoomPropertyView from "./AdminRoomPropertyView.vue"
 import AdminRoomManagementView from "./AdminRoomManagementView.vue"
+import AdminChatbotSetup from "./AdminChatbotSetup.vue"
 
 const route = useRoute()
 const title = computed(() => (route.meta.pageTitle as string) ?? "Admin")
@@ -14,6 +15,7 @@ const title = computed(() => (route.meta.pageTitle as string) ?? "Admin")
   <AdminHotelInformationView v-if="title === 'Hotel Information'" />
   <AdminRoomPropertyView v-else-if="title === 'Room & Property'" />
   <AdminRoomManagementView v-else-if="title === 'Room Management'" />
+  <AdminChatbotSetup v-else-if="title === 'Chatbot Setup'" />
 
   <section v-else class="flex min-h-0 flex-1 flex-col bg-[#F6F7FC]">
     <AdminPageHeader :title="title" />
