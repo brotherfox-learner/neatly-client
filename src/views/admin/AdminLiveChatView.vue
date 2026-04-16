@@ -30,6 +30,73 @@ interface ChatMessage {
   createdAt: string
 }
 
+function uuidKey(id: string | null | undefined | unknown): string {
+  return String(id ?? '')
+    .trim()
+    .toLowerCase()
+}
+
+function stompBodyToString(body: unknown): string {
+  if (typeof body === 'string') return body
+  if (body instanceof ArrayBuffer) return new TextDecoder().decode(body)
+  if (ArrayBuffer.isView(body)) {
+    const v = body as ArrayBufferView
+    return new TextDecoder().decode(v.buffer.slice(v.byteOffset, v.byteOffset + v.byteLength))
+  }
+  return String(body ?? '')
+}
+
+/** Map REST/STOMP JSON (camelCase or snake_case) into a stable ChatMessage shape. */
+function coerceChatMessage(raw: unknown): ChatMessage | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const id = o.id ?? o.messageId
+  const chatRoomId = o.chatRoomId ?? o.chat_room_id
+  const message = o.message ?? o.text
+  const createdAt = o.createdAt ?? o.created_at
+  if (id == null || chatRoomId == null || message == null) return null
+  const created = (() => {
+    const v = createdAt
+    if (typeof v === 'string') return v
+    if (v instanceof Date) return v.toISOString()
+    if (typeof v === 'number') return new Date(v).toISOString()
+    if (Array.isArray(v) && v.length >= 3) {
+      const y = Number(v[0])
+      const mo = Number(v[1])
+      const d = Number(v[2])
+      const h = v.length > 3 ? Number(v[3]) : 0
+      const mi = v.length > 4 ? Number(v[4]) : 0
+      const s = v.length > 5 ? Number(v[5]) : 0
+      const ns = v.length > 6 ? Number(v[6]) : 0
+      if (!Number.isNaN(y) && !Number.isNaN(mo) && !Number.isNaN(d)) {
+        return new Date(Date.UTC(y, mo - 1, d, h, mi, s, ns / 1_000_000)).toISOString()
+      }
+    }
+    return new Date().toISOString()
+  })()
+  return {
+    id: String(id),
+    chatRoomId: String(chatRoomId),
+    senderId: o.senderId != null ? String(o.senderId) : o.sender_id != null ? String(o.sender_id) : null,
+    senderName: String(o.senderName ?? o.sender_name ?? ''),
+    senderAvatarUrl:
+      o.senderAvatarUrl != null
+        ? String(o.senderAvatarUrl)
+        : o.sender_avatar_url != null
+          ? String(o.sender_avatar_url)
+          : null,
+    senderType: String(o.senderType ?? o.sender_type ?? 'USER'),
+    message: String(message),
+    messageType: String(o.messageType ?? o.message_type ?? 'TEXT'),
+    createdAt: created,
+  }
+}
+
+function appendMessageDeduped(row: ChatMessage) {
+  if (!row.id || messages.value.some((m) => uuidKey(m.id) === uuidKey(row.id))) return
+  messages.value.push(row)
+}
+
 const pendingRooms = ref<ChatRoom[]>([])
 const activeRooms = ref<ChatRoom[]>([])
 const selectedRoom = ref<ChatRoom | null>(null)
@@ -37,6 +104,7 @@ const messages = ref<ChatMessage[]>([])
 const inputMessage = ref('')
 const stompClient = ref<Client | null>(null)
 const messagesContainer = ref<HTMLElement | null>(null)
+let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -49,11 +117,20 @@ onMounted(async () => {
   await fetchPendingRooms()
   await fetchMyActiveRooms()
   await connectWebSocket()
+  pollTimer = setInterval(() => {
+    void fetchPendingRooms()
+    void fetchMyActiveRooms()
+    void refreshSelectedRoomMessages()
+  }, 12_000)
 })
 
 onUnmounted(() => {
+  if (pollTimer != null) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
   if (stompClient.value) {
-    stompClient.value.deactivate()
+    void stompClient.value.deactivate()
   }
 })
 
@@ -101,6 +178,15 @@ async function connectWebSocket() {
     const token = session?.data?.session?.access_token
     if (!token) return
 
+    if (stompClient.value) {
+      try {
+        await stompClient.value.deactivate()
+      } catch {
+        /* ignore */
+      }
+      stompClient.value = null
+    }
+
     const wsUrl = getChatWebSocketUrl()
 
     const client = new Client({
@@ -110,6 +196,9 @@ async function connectWebSocket() {
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       onConnect: () => {
+        void fetchPendingRooms()
+        void fetchMyActiveRooms()
+
         // Listen for new requests
         client.subscribe('/topic/admin/chat-requests', (msg) => {
           try {
@@ -131,12 +220,16 @@ async function connectWebSocket() {
         // Personal queue for this admin (JWT sub = Principal name)
         client.subscribe('/user/queue/chat', (msg) => {
           try {
-            const chatMsg = JSON.parse(msg.body) as ChatMessage
-            if (selectedRoom.value?.id === chatMsg.chatRoomId) {
-              messages.value.push(chatMsg)
-              scrollToBottom()
-            }
-          } catch (e) {}
+            const raw = JSON.parse(stompBodyToString(msg.body)) as unknown
+            const chatMsg = coerceChatMessage(raw)
+            if (!chatMsg) return
+            const openId = selectedRoom.value?.id
+            if (!openId || uuidKey(openId) !== uuidKey(chatMsg.chatRoomId)) return
+            appendMessageDeduped(chatMsg)
+            scrollToBottom()
+          } catch (e) {
+            console.error('[admin chat] /user/queue/chat parse failed', e)
+          }
         })
       }
     })
@@ -181,22 +274,47 @@ async function acceptRoom(roomId: string) {
   }
 }
 
+async function loadMessagesForRoom(roomId: string) {
+  const baseUrl = getApiBaseUrl()
+  const { getSupabase } = await import('@/lib/supabase')
+  const supabase = getSupabase()
+  const session = await supabase?.auth.getSession()
+  const token = session?.data?.session?.access_token
+  if (!token) return
+  const res = await axios.get<unknown[]>(`${baseUrl}/api/v1/chat/rooms/${roomId}/messages`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const rows: ChatMessage[] = []
+  for (const raw of res.data) {
+    const m = coerceChatMessage(raw)
+    if (m) rows.push(m)
+  }
+  return rows
+}
+
 async function selectRoom(room: ChatRoom) {
   selectedRoom.value = room
   try {
-    const baseUrl = getApiBaseUrl()
-    const { getSupabase } = await import('@/lib/supabase')
-    const supabase = getSupabase()
-    const session = await supabase?.auth.getSession()
-    const token = session?.data?.session?.access_token
-    
-    const res = await axios.get<ChatMessage[]>(`${baseUrl}/api/v1/chat/rooms/${room.id}/messages`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    messages.value = res.data
-    scrollToBottom()
+    const data = await loadMessagesForRoom(room.id)
+    if (data) {
+      messages.value = data
+      scrollToBottom()
+    }
   } catch (e) {
     console.error('Failed to fetch messages:', e)
+  }
+}
+
+async function refreshSelectedRoomMessages() {
+  const room = selectedRoom.value
+  if (!room) return
+  try {
+    const data = await loadMessagesForRoom(room.id)
+    if (!data) return
+    messages.value = data
+    scrollToBottom()
+  } catch {
+    /* ignore */
   }
 }
 
@@ -211,13 +329,14 @@ async function sendMessage() {
     const session = await supabase?.auth.getSession()
     const token = session?.data?.session?.access_token
     
-    await axios.post(
+    await axios.post<ChatMessage>(
       `${baseUrl}/api/v1/chat/rooms/${selectedRoom.value.id}/messages`,
       { message: text },
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` } },
     )
-    
+
     inputMessage.value = ''
+    await refreshSelectedRoomMessages()
   } catch (e) {
     console.error('Failed to send message:', e)
   }
