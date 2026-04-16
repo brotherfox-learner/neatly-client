@@ -170,14 +170,13 @@ const handleConfirm = async () => {
           },
         }
 
-    const { error: stripeConfirmError, paymentIntent } = await stripeInstance.confirmCardPayment(
-      clientSecret,
-      paymentMethodParam,
-    )
+    const confirmResult = await stripeInstance.confirmCardPayment(clientSecret, paymentMethodParam)
+    const stripeConfirmError = confirmResult.error
+    const paymentIntent = confirmResult.paymentIntent
+    // เก็บ pm_xxx ไว้ใช้ตอน retry (ถ้า Stripe ออกให้แล้ว)
+    const pm = paymentIntent?.payment_method
 
     if (stripeConfirmError) {
-      // เก็บ pm_xxx ไว้ใช้ตอน retry (ถ้า Stripe ออกให้แล้ว)
-      const pm = paymentIntent?.payment_method
       if (pm) {
         bookingStore.savedPaymentMethodId = typeof pm === 'string' ? pm : pm.id
       }
@@ -441,4 +440,4 @@ const handleBack = () => {
 .fade-leave-to {
   opacity: 0;
 }
-</style>
+</style>1
