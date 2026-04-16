@@ -4,10 +4,12 @@
       <slot name="icon"></slot>
     </i>
     <div class="details">
-      <h3>
+      <h3 class="headline-4">
         <slot name="heading"></slot>
       </h3>
-      <slot></slot>
+      <div class="body-3">
+        <slot></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -34,11 +36,8 @@ i {
   color: var(--color-text);
 }
 
-h3 {
-  font-size: 1.2rem;
-  font-weight: 500;
+.headline-4 {
   margin-bottom: 0.4rem;
-  color: var(--color-heading);
 }
 
 @media (min-width: 1024px) {
