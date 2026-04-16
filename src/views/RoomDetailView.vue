@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
-import { useBookingStore } from "@/stores/booking"
-import LandingChatFab from "@/components/landing/LandingChatFab.vue"
+import { useRoute } from "vue-router"
 import LandingFooter from "@/components/landing/LandingFooter.vue"
 import OtherRoomsSection from "@/components/room/OtherRoomsSection.vue"
 import RoomDetailLoading from "@/components/room/RoomDetailLoading.vue"
@@ -208,6 +206,5 @@ watch(
     </main>
 
     <LandingFooter />
-    <LandingChatFab v-if="room && !loading" />
   </div>
 </template>

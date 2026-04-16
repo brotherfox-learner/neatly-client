@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { getApiBaseUrl } from './apiBaseUrl'
 import { getSupabase } from './supabase'
 
 function isPublicBackendPath(url: string | undefined): boolean {
@@ -11,7 +12,7 @@ function isPublicBackendPath(url: string | undefined): boolean {
 }
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? '',
+  baseURL: getApiBaseUrl(),
   timeout: 30_000,
 })
 
@@ -39,7 +40,7 @@ api.interceptors.request.use(async (config) => {
     if (!config.headers) {
       config.headers = {}
     }
-    // ถ้ามี Authorization ถูกตั้งมาก่อน (เช่นจาก fetchMe(accessToken)) ให้ใช้ของเดิม
+    // If Authorization was already set (e.g. fetchMe(accessToken)), keep it.
     if (!('Authorization' in config.headers)) {
       ;(config.headers as Record<string, string>).Authorization = `Bearer ${token}`
     }

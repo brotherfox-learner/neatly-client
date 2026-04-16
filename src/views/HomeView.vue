@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import LandingAboutSlideshow from "@/components/landing/LandingAboutSlideshow.vue"
-import LandingChatFab from "@/components/landing/LandingChatFab.vue"
 import LandingFacilities from "@/components/landing/LandingFacilities.vue"
 import LandingFooter from "@/components/landing/LandingFooter.vue"
 import LandingHero from "@/components/landing/LandingHero.vue"
@@ -16,6 +15,5 @@ import LandingTestimonials from "@/components/landing/LandingTestimonials.vue"
     <LandingRooms />
     <LandingTestimonials />
     <LandingFooter />
-    <LandingChatFab />
   </div>
 </template>
