@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { useRoute } from "vue-router"
+import { useRouter,useRoute } from "vue-router"
 import LandingFooter from "@/components/landing/LandingFooter.vue"
 import OtherRoomsSection from "@/components/room/OtherRoomsSection.vue"
 import RoomDetailLoading from "@/components/room/RoomDetailLoading.vue"
@@ -9,6 +9,7 @@ import type { Room } from "@/data/rooms"
 import { formatPrice } from "@/data/rooms"
 import { fetchOtherRoomTypesForCarousel, fetchRoomTypeDetail } from "@/lib/roomCatalog"
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase"
+import { useBookingStore } from "@/stores/booking"
 
 const route = useRoute()
 const router = useRouter()

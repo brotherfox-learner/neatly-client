@@ -170,14 +170,13 @@ const handleConfirm = async () => {
           },
         }
 
-    const { error: stripeConfirmError, paymentIntent } = await stripeInstance.confirmCardPayment(
-      clientSecret,
-      paymentMethodParam,
-    )
+    const confirmResult = await stripeInstance.confirmCardPayment(clientSecret, paymentMethodParam)
+    const stripeConfirmError = confirmResult.error
+    const paymentIntent = confirmResult.paymentIntent
+    // เก็บ pm_xxx ไว้ใช้ตอน retry (ถ้า Stripe ออกให้แล้ว)
+    const pm = paymentIntent?.payment_method
 
     if (stripeConfirmError) {
-      // เก็บ pm_xxx ไว้ใช้ตอน retry (ถ้า Stripe ออกให้แล้ว)
-      const pm = paymentIntent?.payment_method
       if (pm) {
         bookingStore.savedPaymentMethodId = typeof pm === 'string' ? pm : pm.id
       }
@@ -279,7 +278,6 @@ const handleBack = () => {
         <div v-show="selectedMethod === 'card'" class="flex flex-col gap-6 lg:gap-10">
           <h2 class="headline-5 text-gray-600 lg:text-gray-800">Credit Card</h2>
 
-          <!-- Card Number -->
           <div class="flex flex-col gap-1">
             <label class="body-1 text-gray-900">Card Number</label>
             <div id="stripe-card-number" class="border border-gray-400 rounded-sm p-3 bg-white" />
@@ -290,8 +288,6 @@ const handleBack = () => {
             <label class="body-1 text-gray-900">Card Owner</label>
             <input v-model="cardOwner" class="border border-gray-400 rounded-sm p-3" placeholder="Name on card" />
           </div>
-
-          <!-- Expiry + CVV -->
           <div class="flex gap-10">
             <div class="flex flex-col gap-1 flex-1">
               <label class="body-1 text-gray-900">Expiry</label>
@@ -444,4 +440,4 @@ const handleBack = () => {
 .fade-leave-to {
   opacity: 0;
 }
-</style>
+</style>1
